@@ -7,15 +7,6 @@ stages:
   type: git
   name: agama-integration-tests
 
-#- url: https://src.suse.de/pool/agama-web-ui/pulls/17
-
-# https://build.suse.de/project/show/SUSE:SLFO:Products:SLES:16.1:TEST
-# https://build.suse.de/repositories/SUSE:SLFO:Products:SLES:16.1:TEST
-# binary -b must have :suffix, source not. hard to find what produces what,
-# scraping the resulting repo for now
-# iosc ls SUSE:SLFO:Products:SLES:16.1:TEST agama-installer-SLES:SUSE_SLE_16.1 -b -v 
-
-# https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.1:/TEST/product/iso/SLES-16.1-Online-x86_64-Build21.1.install.iso
 - url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.1:/TEST/product/iso/
   internal: true
   type: mirrorcache
