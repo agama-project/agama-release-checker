@@ -61,7 +61,7 @@ def find_iso_urls(
     soup = BeautifulSoup(content, "html.parser")
     iso_urls = []
     for a_tag in soup.find_all("a", href=True):
-        href = a_tag["href"]
+        href = str(a_tag["href"])
         filename = href.split("/")[-1]
         for pattern in patterns:
             if fnmatch.fnmatch(filename, pattern):
