@@ -5,4 +5,6 @@ check-black:
 check-mypy:
 	mypy ${MAIN}
 check-pytest:
+	PYTHONPATH=src pytest --cov --cov-report=term --cov-report=html tests/
+check-pytest-nocov:
 	PYTHONPATH=src pytest tests/

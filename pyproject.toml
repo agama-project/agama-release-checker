@@ -19,6 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest",
+    "pytest-cov",
     "requests-mock",
 ]
 
@@ -27,6 +28,13 @@ agama-release-checker = "agama_release_checker.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.coverage.run]
+source_pkgs = ["agama_release_checker"]
+branch = true
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 [tool.mypy]
 explicit_package_bases = true
