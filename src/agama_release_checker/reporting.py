@@ -180,7 +180,7 @@ def print_gitea_results(
 
 
 def print_gitea_pull_requests_results(
-    results: List[Tuple[Dict[str, Any], List[GiteaPullRequest]]]
+    results: List[Tuple[Dict[str, Any], List[GiteaPullRequest]]],
 ) -> None:
     """Prints results for Gitea pull requests."""
     for gitea_config, prs in results:
@@ -221,7 +221,7 @@ def print_gitea_pull_requests_results(
 
 
 def print_obs_requests_results(
-    results: List[Tuple[Dict[str, Any], List[ObsRequest]]]
+    results: List[Tuple[Dict[str, Any], List[ObsRequest]]],
 ) -> None:
     """Prints results for OBS submit requests."""
     for obs_config, requests in results:
