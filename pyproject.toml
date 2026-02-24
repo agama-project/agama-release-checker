@@ -1,7 +1,33 @@
-# This pyproject.toml is primarily used to declare the build system.
-# Package metadata and dependencies are defined in setup.cfg for compatibility
-# with older versions of pip/setuptools in Python 3.6 environments.
-
 [build-system]
 requires = ["setuptools>=40.8.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "agama-release-checker"
+version = "0.1.0"
+description = "A tool to check for Agama releases in ISOs."
+authors = [{name = "First Last", email = "your@email.com"}]
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml",
+    "requests",
+    "beautifulsoup4",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "requests-mock",
+]
+
+[project.scripts]
+agama-release-checker = "agama_release_checker.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+explicit_package_bases = true
+mypy_path = "src"

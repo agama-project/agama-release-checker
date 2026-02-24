@@ -1,8 +1,8 @@
 This is written in Python, so that people and robots find it easy to read and
 modify.
 
-Specifically we target the Python platform that is available in
-openSUSE Leap 15.6 and that is Python 3.6.
+Specifically we target Python 3.11 or newer. On openSUSE Leap 15.6
+where the default `python3` is 3.6, use `python3.11` and `pip3.11`.
 
 Make use of ./agama-release-checker instead of calling python3 with arguments.
 

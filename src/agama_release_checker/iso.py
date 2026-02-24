@@ -65,7 +65,7 @@ def get_packages_from_metadata_file(packages_json_maybe_gz: Path) -> List[Packag
         with gzip.open(packages_json_maybe_gz, "rt", encoding="utf-8") as f:
             data = json.load(f)
             return [Package(**p) for p in data]
-    except OSError as e:  # Catch OSError for non-gzipped files in Python 3.6
+    except OSError as e:
         logging.debug(
             f"Failed to parse gzipped metadata file {packages_json_maybe_gz} due to OSError: {e}. Trying plain JSON."
         )
