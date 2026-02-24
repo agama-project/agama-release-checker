@@ -17,8 +17,10 @@ from .reporting import (
     print_obs_requests_results,
     extract_git_hashes,
 )
-from .reports import RpmsOnIsoReport, PackagesInObsReport, PackagesInGiteaReport
+from .reports.iso_report import RpmsOnIsoReport
+from .reports.obs_report import PackagesInObsReport
 from .reports.obs_requests import ObsSubmitRequestsReport
+from .reports.gitea_report import PackagesInGiteaReport
 from .reports.gitea_pull_requests import GiteaPullRequestsReport
 from .utils import CACHE_DIR, ensure_dir
 

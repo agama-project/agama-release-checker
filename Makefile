@@ -8,3 +8,7 @@ check-pytest:
 	PYTHONPATH=src pytest --cov --cov-report=term --cov-report=html tests/
 check-pytest-nocov:
 	PYTHONPATH=src pytest tests/
+
+.PHONY: docs
+docs:
+	PYTHONPATH=src uv run --with pdoc pdoc agama_release_checker -o docs/
