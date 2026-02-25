@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set
 from urllib.parse import urlparse
 
-from agama_release_checker.models import SourcePackage
+from agama_release_checker.models import ObsConfig, SourcePackage
 from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
@@ -12,7 +12,7 @@ from agama_release_checker.parsing import parse_obsinfo, parse_spec
 class PackagesInObsReport:
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: ObsConfig,
         binary_patterns_by_source: Dict[str, List[str]],
         spec_names_by_package: Optional[Dict[str, List[str]]] = None,
         no_cache: bool = False,
@@ -23,11 +23,8 @@ class PackagesInObsReport:
         self.no_cache = no_cache
 
     def _get_project_name(self) -> str:
-        url = self.config.get("url", "")
-        if not url:
-            return ""
         # Handle cases where URL might end with slash
-        path = urlparse(url).path.strip("/")
+        path = urlparse(self.config.url).path.strip("/")
         # Expected format: /project/show/<project_name>
         parts = path.split("/")
         return parts[-1]
@@ -40,7 +37,7 @@ class PackagesInObsReport:
             return run_cached_command(cmd, cache_dir=None)
 
         # Directory structure: CACHE_DIR/obs/repo_name/osc_commands/
-        repo_name = self.config.get("name", "unknown")
+        repo_name = self.config.name
         cache_dir = CACHE_DIR / "obs" / repo_name / "osc_commands"
 
         # run_cached_command will handle directory creation and caching
@@ -70,7 +67,7 @@ class PackagesInObsReport:
         project = self._get_project_name()
         if not project:
             logging.error(
-                f"Could not determine OBS project name from URL: {self.config.get('url')}"
+                f"Could not determine OBS project name from URL: {self.config.url}"
             )
             return None, None
 

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch, call, ANY
 import pytest  # type: ignore
 import subprocess
 
+from agama_release_checker.models import GiteaConfig
 from agama_release_checker.reports.gitea_report import PackagesInGiteaReport
 
 
@@ -42,10 +43,11 @@ def test_packages_in_gitea_report(
         (True, ""),  # sparse-checkout set
     ]
 
-    config = {
-        "url": "https://src.suse.de/pool/",
-        "name": "ibs-pool",
-    }
+    config = GiteaConfig(
+        type="gitea",
+        url="https://src.suse.de/pool/",
+        name="ibs-pool",
+    )
     # Only one source package for this test
     binary_patterns_by_source = {
         "agama": ["agama"],
@@ -72,10 +74,11 @@ def test_packages_in_gitea_report(
 
 
 def test_get_remote_url():
-    config = {
-        "url": "https://src.suse.de/pool/",
-        "name": "ibs-pool",
-    }
+    config = GiteaConfig(
+        type="gitea",
+        url="https://src.suse.de/pool/",
+        name="ibs-pool",
+    )
     report = PackagesInGiteaReport(config, {}, {})
     remote_url = report._get_remote_url("agama")
     assert remote_url == "gitea@src.suse.de:pool/agama.git"
@@ -100,11 +103,12 @@ def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
         (True, ""),
     ]
 
-    config = {
-        "url": "https://src.suse.de/pool/",
-        "name": "ibs-pool",
-        "branch": "mybranch",
-    }
+    config = GiteaConfig(
+        type="gitea",
+        url="https://src.suse.de/pool/",
+        name="ibs-pool",
+        branch="mybranch",
+    )
     binary_patterns_by_source = {"agama": ["agama"]}
     report = PackagesInGiteaReport(config, binary_patterns_by_source, {})
 
@@ -148,11 +152,12 @@ def test_gitea_update_with_branch(mock_exists, mock_run_git):
         (True, ""),
     ]
 
-    config = {
-        "url": "https://src.suse.de/pool/",
-        "name": "ibs-pool",
-        "branch": "mybranch",
-    }
+    config = GiteaConfig(
+        type="gitea",
+        url="https://src.suse.de/pool/",
+        name="ibs-pool",
+        branch="mybranch",
+    )
     binary_patterns_by_source = {"agama": ["agama"]}
     report = PackagesInGiteaReport(config, binary_patterns_by_source, {})
 

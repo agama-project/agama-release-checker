@@ -1,10 +1,10 @@
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from agama_release_checker.models import ObsRequest
+from agama_release_checker.models import ObsConfig, ObsRequest
 from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
 
@@ -12,7 +12,7 @@ from agama_release_checker.caching import run_cached_command
 class ObsSubmitRequestsReport:
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: ObsConfig,
         binary_patterns_by_source: Dict[str, List[str]],
         no_cache: bool = False,
         recent_requests: bool = False,
@@ -23,11 +23,8 @@ class ObsSubmitRequestsReport:
         self.recent_requests = recent_requests
 
     def _get_project_name(self) -> str:
-        url = self.config.get("url", "")
-        if not url:
-            return ""
         # Handle cases where URL might end with slash
-        path = urlparse(url).path.strip("/")
+        path = urlparse(self.config.url).path.strip("/")
         # Expected format: /project/show/<project_name>
         parts = path.split("/")
         return parts[-1]
@@ -40,7 +37,7 @@ class ObsSubmitRequestsReport:
             return run_cached_command(cmd, cache_dir=None)
 
         # Directory structure: CACHE_DIR/obs/repo_name/osc_requests/
-        repo_name = self.config.get("name", "unknown")
+        repo_name = self.config.name
         cache_dir = CACHE_DIR / "obs" / repo_name / "osc_requests"
 
         # run_cached_command will handle directory creation and caching
@@ -50,7 +47,7 @@ class ObsSubmitRequestsReport:
         project = self._get_project_name()
         if not project:
             logging.error(
-                f"Could not determine OBS project name from URL: {self.config.get('url')}"
+                f"Could not determine OBS project name from URL: {self.config.url}"
             )
             return None, None
 

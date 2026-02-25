@@ -1,9 +1,9 @@
 import json
 import logging
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from agama_release_checker.models import GiteaPullRequest
+from agama_release_checker.models import GiteaConfig, GiteaPullRequest
 from agama_release_checker.caching import run_cached_command
 from agama_release_checker.utils import CACHE_DIR
 
@@ -11,7 +11,7 @@ from agama_release_checker.utils import CACHE_DIR
 class GiteaPullRequestsReport:
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: GiteaConfig,
         binary_patterns_by_source: Dict[str, List[str]],
         no_cache: bool = False,
     ):
@@ -20,22 +20,21 @@ class GiteaPullRequestsReport:
         self.no_cache = no_cache
 
     def _get_repo_path(self, package_name: str) -> str:
-        base_url = self.config.get("url", "").rstrip("/")
+        base_url = self.config.url.rstrip("/")
         # https://src.suse.de/pool/ -> pool/package_name
         parsed = urlparse(base_url)
         path = parsed.path.strip("/")
         return f"{path}/{package_name}"
 
     def _get_login(self) -> str:
-        url = self.config.get("url", "")
-        parsed = urlparse(url)
+        parsed = urlparse(self.config.url)
         return parsed.netloc
 
     def _fetch_prs(self, package_name: str) -> List[GiteaPullRequest]:
         repo = self._get_repo_path(package_name)
         login = self._get_login()
-        branch = self.config.get("branch")
-        config_name = self.config.get("name", "unknown")
+        branch = self.config.branch
+        config_name = self.config.name
 
         cmd = [
             "tea",
@@ -88,7 +87,7 @@ class GiteaPullRequestsReport:
             return []
 
     def run(self) -> Tuple[None, List[GiteaPullRequest]]:
-        logging.info(f"Processing Gitea pull requests for: {self.config.get('name')}")
+        logging.info(f"Processing Gitea pull requests for: {self.config.name}")
         all_prs: List[GiteaPullRequest] = []
         for package_name in self.binary_patterns_by_source.keys():
             prs = self._fetch_prs(package_name)

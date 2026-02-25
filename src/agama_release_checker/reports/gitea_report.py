@@ -1,10 +1,10 @@
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from agama_release_checker.models import SourcePackage
+from agama_release_checker.models import GiteaConfig, SourcePackage
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
 
@@ -12,7 +12,7 @@ from agama_release_checker.parsing import parse_obsinfo, parse_spec
 class PackagesInGiteaReport:
     def __init__(
         self,
-        config: Dict[str, Any],
+        config: GiteaConfig,
         binary_patterns_by_source: Dict[str, List[str]],
         spec_names_by_package: Optional[Dict[str, List[str]]] = None,
         no_cache: bool = False,
@@ -24,7 +24,7 @@ class PackagesInGiteaReport:
         logging.debug(f"CACHE_DIR={CACHE_DIR}")
 
     def _get_remote_url(self, package_name: str) -> str:
-        base_url = self.config.get("url", "").rstrip("/")
+        base_url = self.config.url.rstrip("/")
         # https://src.suse.de/pool/agama -> gitea@src.suse.de:pool/agama.git
         url = f"{base_url}/{package_name}"
         parsed = urlparse(url)
@@ -52,8 +52,8 @@ class PackagesInGiteaReport:
 
     def _fetch_package_data(self, package_name: str) -> Optional[List[SourcePackage]]:
         remote_url = self._get_remote_url(package_name)
-        config_name = self.config.get("name", "unknown")
-        branch = self.config.get("branch")
+        config_name = self.config.name
+        branch = self.config.branch
         repo_path = CACHE_DIR / "gitea" / config_name / package_name
 
         if self.no_cache and repo_path.exists():
@@ -188,7 +188,7 @@ class PackagesInGiteaReport:
         return packages
 
     def run(self) -> Tuple[Optional[str], Optional[List[SourcePackage]]]:
-        logging.info(f"Processing Gitea project: {self.config.get('name')}")
+        logging.info(f"Processing Gitea project: {self.config.name}")
         all_packages: List[SourcePackage] = []
         for package_name in self.binary_patterns_by_source.keys():
             pkgs = self._fetch_package_data(package_name)

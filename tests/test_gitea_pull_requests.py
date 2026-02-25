@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from typing import List, Dict, Any
 
 from agama_release_checker.reports.gitea_pull_requests import GiteaPullRequestsReport
-from agama_release_checker.models import GiteaPullRequest
+from agama_release_checker.models import GiteaConfig, GiteaPullRequest
 
 
 @patch("agama_release_checker.reports.gitea_pull_requests.run_cached_command")
@@ -26,11 +26,12 @@ def test_gitea_pull_requests_report(mock_run):
 
     mock_run.return_value = (True, json.dumps(tea_output))
 
-    config = {
-        "url": "https://src.suse.de/pool/",
-        "name": "ibs-pool-slfo1.2",
-        "branch": "slfo-1.2",
-    }
+    config = GiteaConfig(
+        type="gitea",
+        url="https://src.suse.de/pool/",
+        name="ibs-pool-slfo1.2",
+        branch="slfo-1.2",
+    )
     binary_patterns_by_source = {
         "rubygem-agama-yast": ["rubygem-agama-yast"],
     }
@@ -74,11 +75,12 @@ def test_gitea_pull_requests_report_branch_filtering(mock_run):
 
     mock_run.return_value = (True, json.dumps(tea_output))
 
-    config = {
-        "url": "https://src.suse.de/pool/",
-        "name": "ibs-pool-slfo1.2",
-        "branch": "slfo-1.2",
-    }
+    config = GiteaConfig(
+        type="gitea",
+        url="https://src.suse.de/pool/",
+        name="ibs-pool-slfo1.2",
+        branch="slfo-1.2",
+    )
     binary_patterns_by_source = {
         "agama": ["agama"],
     }

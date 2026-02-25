@@ -4,7 +4,7 @@ from unittest.mock import patch
 from datetime import datetime
 
 from agama_release_checker.reports.obs_requests import ObsSubmitRequestsReport
-from agama_release_checker.models import ObsRequest
+from agama_release_checker.models import ObsConfig, ObsRequest
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -31,11 +31,12 @@ def test_obs_submit_requests_report(mock_run_cached):
 
     mock_run_cached.side_effect = side_effect
 
-    config = {
-        "url": "https://build.opensuse.org/project/show/openSUSE:Factory",
-        "name": "obs-factory",
-        "submit_requests": True,
-    }
+    config = ObsConfig(
+        type="obs",
+        url="https://build.opensuse.org/project/show/openSUSE:Factory",
+        name="obs-factory",
+        submit_requests=True,
+    )
 
     binary_patterns_by_source = {
         "agama": ["agama"],
@@ -78,11 +79,12 @@ def test_obs_submit_requests_report_recent(mock_run_cached, mock_datetime):
 
     mock_run_cached.side_effect = side_effect
 
-    config = {
-        "url": "https://build.opensuse.org/project/show/openSUSE:Factory",
-        "name": "obs-factory",
-        "submit_requests": True,
-    }
+    config = ObsConfig(
+        type="obs",
+        url="https://build.opensuse.org/project/show/openSUSE:Factory",
+        name="obs-factory",
+        submit_requests=True,
+    )
 
     binary_patterns_by_source = {
         "agama": ["agama"],

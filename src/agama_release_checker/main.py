@@ -9,6 +9,8 @@ from .config import load_config
 from .iso_utils import check_command
 from .models import (
     MirrorcacheConfig,
+    ObsConfig,
+    GiteaConfig,
     AppConfig,
     BinaryPackage,
     SourcePackage,
@@ -145,8 +147,9 @@ def main() -> None:
                     all_git_hashes[name].update(hashes)
 
         elif repo_type == "obs":
+            obs_config = ObsConfig(**repo)
             obs_report = PackagesInObsReport(
-                repo,
+                obs_config,
                 binary_patterns_by_source,
                 config.spec_names_by_package,
                 no_cache=args.no_command_cache,
@@ -155,10 +158,7 @@ def main() -> None:
 
             obs_results.append(
                 (
-                    {
-                        "name": repo.get("name", "Unknown OBS Project"),
-                        "url": repo.get("url"),
-                    },
+                    {"name": obs_config.name, "url": obs_config.url},
                     obs_packages,
                 )
             )
@@ -169,9 +169,9 @@ def main() -> None:
                         all_git_hashes[name] = set()
                     all_git_hashes[name].update(hashes)
 
-            if repo.get("submit_requests"):
+            if obs_config.submit_requests:
                 requests_report = ObsSubmitRequestsReport(
-                    repo,
+                    obs_config,
                     binary_patterns_by_source,
                     no_cache=args.no_command_cache,
                     recent_requests=args.recent_rq,
@@ -180,17 +180,15 @@ def main() -> None:
                 if requests:
                     obs_requests_results.append(
                         (
-                            {
-                                "name": repo.get("name", "Unknown OBS Project"),
-                                "url": repo.get("url"),
-                            },
+                            {"name": obs_config.name, "url": obs_config.url},
                             requests,
                         )
                     )
 
         elif repo_type == "gitea":
+            gitea_config = GiteaConfig(**repo)
             gitea_report = PackagesInGiteaReport(
-                repo,
+                gitea_config,
                 binary_patterns_by_source,
                 config.spec_names_by_package,
                 no_cache=args.no_command_cache,
@@ -199,10 +197,7 @@ def main() -> None:
 
             gitea_results.append(
                 (
-                    {
-                        "name": repo.get("name", "Unknown Gitea Project"),
-                        "url": repo.get("url"),
-                    },
+                    {"name": gitea_config.name, "url": gitea_config.url},
                     gitea_packages,
                 )
             )
@@ -216,16 +211,15 @@ def main() -> None:
                     all_git_hashes[name].update(hashes)
 
             gitea_pr_report = GiteaPullRequestsReport(
-                repo, binary_patterns_by_source, no_cache=args.no_command_cache
+                gitea_config,
+                binary_patterns_by_source,
+                no_cache=args.no_command_cache,
             )
             _, prs = gitea_pr_report.run()
             if prs:
                 gitea_pr_results.append(
                     (
-                        {
-                            "name": repo.get("name", "Unknown Gitea Project"),
-                            "url": repo.get("url"),
-                        },
+                        {"name": gitea_config.name, "url": gitea_config.url},
                         prs,
                     )
                 )

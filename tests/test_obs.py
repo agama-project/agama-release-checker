@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest  # type: ignore
 
+from agama_release_checker.models import ObsConfig
 from agama_release_checker.reports.obs_report import PackagesInObsReport
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -69,10 +70,11 @@ def test_packages_in_obs_report(mock_run_cached):
 
     mock_run_cached.side_effect = side_effect
 
-    config = {
-        "url": "https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel",
-        "name": "obs-sm-A-Devel",
-    }
+    config = ObsConfig(
+        type="obs",
+        url="https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel",
+        name="obs-sm-A-Devel",
+    )
 
     binary_patterns_by_source = {
         "agama": ["agama"],
@@ -110,7 +112,9 @@ def test_osc_missing(mock_run_cached):
     # Simulate run_cached_command returning failure (e.g. osc not found)
     mock_run_cached.return_value = (False, "")
 
-    config = {"url": "https://build.opensuse.org/project/show/foo"}
+    config = ObsConfig(
+        type="obs", url="https://build.opensuse.org/project/show/foo", name="foo"
+    )
     report = PackagesInObsReport(config, {}, {})
     latest_url, packages = report.run()
 
