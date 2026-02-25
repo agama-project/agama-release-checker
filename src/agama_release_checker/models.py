@@ -55,24 +55,43 @@ class GiteaPullRequest:
 
 
 @dataclass
-class StageConfig:
+class RepositoryConfig:
+    """Base configuration for a repository entry in config.yml."""
+
     type: str
     name: str
     url: str
 
 
 @dataclass
-class MirrorcacheConfig(StageConfig):
+class MirrorcacheConfig(RepositoryConfig):
+    """Configuration for a mirrorcache ISO download directory."""
+
     files: List[str] = field(default_factory=list)
 
 
 @dataclass
-class GitConfig(StageConfig):
+class GitConfig(RepositoryConfig):
+    """Configuration for an upstream git source repository."""
+
     pass
 
 
 @dataclass
-class GiteaConfig(StageConfig):
+class ObsConfig(RepositoryConfig):
+    """Configuration for an OBS project repository."""
+
+    submit_requests: bool = False
+
+
+@dataclass
+class GiteaConfig(RepositoryConfig):
+    """Configuration for a Gitea repository.
+
+    Gitea is a general git technology but in openSUSE context we use it with the
+    specific meaning "VCS storing source tarball blobs for OBS".
+    """
+
     branch: Optional[str] = None
 
 
@@ -93,6 +112,10 @@ class AppConfig:
     @property
     def git_configs(self) -> List[GitConfig]:
         return [GitConfig(**r) for r in self.repositories if r.get("type") == "git"]
+
+    @property
+    def obs_configs(self) -> List[ObsConfig]:
+        return [ObsConfig(**r) for r in self.repositories if r.get("type") == "obs"]
 
     @property
     def gitea_configs(self) -> List[GiteaConfig]:
