@@ -9,7 +9,7 @@ from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
 
 
-class ObsSubmitRequestsReport:
+class ObsRequestsReport:
     def __init__(
         self,
         config: ObsConfig,

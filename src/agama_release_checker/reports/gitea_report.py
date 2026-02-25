@@ -9,7 +9,13 @@ from agama_release_checker.utils import CACHE_DIR, ensure_dir
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
 
 
-class PackagesInGiteaReport:
+class GiteaPackagesReport:
+    """Report on source packages in a Gitea repository.
+
+    Gitea is a general git technology but in openSUSE context we use it with the
+    specific meaning "VCS storing source tarball blobs for OBS".
+    """
+
     def __init__(
         self,
         config: GiteaConfig,

@@ -9,7 +9,7 @@ from agama_release_checker.caching import run_cached_command
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
 
 
-class PackagesInObsReport:
+class ObsPackagesReport:
     def __init__(
         self,
         config: ObsConfig,

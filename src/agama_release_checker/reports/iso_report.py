@@ -13,7 +13,7 @@ from agama_release_checker.network import find_iso_urls, download_file
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 
 
-class RpmsOnIsoReport:
+class IsoPackagesReport:
     def __init__(self, config: MirrorcacheConfig):
         self.config = config
 

@@ -4,11 +4,11 @@ import pytest  # type: ignore
 import subprocess
 
 from agama_release_checker.models import GiteaConfig
-from agama_release_checker.reports.gitea_report import PackagesInGiteaReport
+from agama_release_checker.reports.gitea_report import GiteaPackagesReport
 
 
 @patch(
-    "agama_release_checker.reports.gitea_report.PackagesInGiteaReport._run_git_command"
+    "agama_release_checker.reports.gitea_report.GiteaPackagesReport._run_git_command"
 )
 @patch("agama_release_checker.reports.gitea_report.Path.exists")
 @patch("agama_release_checker.reports.gitea_report.Path.read_text")
@@ -54,7 +54,7 @@ def test_packages_in_gitea_report(
     }
     spec_names_by_package = {}
 
-    report = PackagesInGiteaReport(
+    report = GiteaPackagesReport(
         config, binary_patterns_by_source, spec_names_by_package
     )
     _, packages = report.run()
@@ -79,13 +79,13 @@ def test_get_remote_url():
         url="https://src.suse.de/pool/",
         name="ibs-pool",
     )
-    report = PackagesInGiteaReport(config, {}, {})
+    report = GiteaPackagesReport(config, {}, {})
     remote_url = report._get_remote_url("agama")
     assert remote_url == "gitea@src.suse.de:pool/agama.git"
 
 
 @patch(
-    "agama_release_checker.reports.gitea_report.PackagesInGiteaReport._run_git_command"
+    "agama_release_checker.reports.gitea_report.GiteaPackagesReport._run_git_command"
 )
 @patch("agama_release_checker.reports.gitea_report.Path.exists")
 @patch("agama_release_checker.reports.gitea_report.ensure_dir")
@@ -110,7 +110,7 @@ def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
         branch="mybranch",
     )
     binary_patterns_by_source = {"agama": ["agama"]}
-    report = PackagesInGiteaReport(config, binary_patterns_by_source, {})
+    report = GiteaPackagesReport(config, binary_patterns_by_source, {})
 
     report.run()
 
@@ -133,7 +133,7 @@ def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
 
 
 @patch(
-    "agama_release_checker.reports.gitea_report.PackagesInGiteaReport._run_git_command"
+    "agama_release_checker.reports.gitea_report.GiteaPackagesReport._run_git_command"
 )
 @patch("agama_release_checker.reports.gitea_report.Path.exists")
 def test_gitea_update_with_branch(mock_exists, mock_run_git):
@@ -159,7 +159,7 @@ def test_gitea_update_with_branch(mock_exists, mock_run_git):
         branch="mybranch",
     )
     binary_patterns_by_source = {"agama": ["agama"]}
-    report = PackagesInGiteaReport(config, binary_patterns_by_source, {})
+    report = GiteaPackagesReport(config, binary_patterns_by_source, {})
 
     report.run()
 

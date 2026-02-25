@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 from datetime import datetime
 
-from agama_release_checker.reports.obs_requests import ObsSubmitRequestsReport
+from agama_release_checker.reports.obs_requests import ObsRequestsReport
 from agama_release_checker.models import ObsConfig, ObsRequest
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -43,7 +43,7 @@ def test_obs_submit_requests_report(mock_run_cached):
         "agama-web-ui": ["agama-web-ui"],
     }
 
-    report = ObsSubmitRequestsReport(config, binary_patterns_by_source)
+    report = ObsRequestsReport(config, binary_patterns_by_source)
     _, requests = report.run()
 
     assert requests is not None
@@ -90,9 +90,7 @@ def test_obs_submit_requests_report_recent(mock_run_cached, mock_datetime):
         "agama": ["agama"],
     }
 
-    report = ObsSubmitRequestsReport(
-        config, binary_patterns_by_source, recent_requests=True
-    )
+    report = ObsRequestsReport(config, binary_patterns_by_source, recent_requests=True)
     report.run()
 
     # Verify that the correct query was generated

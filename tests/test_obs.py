@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest  # type: ignore
 
 from agama_release_checker.models import ObsConfig
-from agama_release_checker.reports.obs_report import PackagesInObsReport
+from agama_release_checker.reports.obs_report import ObsPackagesReport
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -83,9 +83,7 @@ def test_packages_in_obs_report(mock_run_cached):
 
     spec_names_by_package = {"rubygem-agama-yast": ["rubygem-agama-yast", "agama-yast"]}
 
-    report = PackagesInObsReport(
-        config, binary_patterns_by_source, spec_names_by_package
-    )
+    report = ObsPackagesReport(config, binary_patterns_by_source, spec_names_by_package)
     latest_url, packages = report.run()
 
     assert latest_url is None
@@ -115,7 +113,7 @@ def test_osc_missing(mock_run_cached):
     config = ObsConfig(
         type="obs", url="https://build.opensuse.org/project/show/foo", name="foo"
     )
-    report = PackagesInObsReport(config, {}, {})
+    report = ObsPackagesReport(config, {}, {})
     latest_url, packages = report.run()
 
     assert packages is None

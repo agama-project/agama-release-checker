@@ -26,11 +26,11 @@ from .reporting import (
     print_obs_requests_results,
     extract_git_hashes,
 )
-from .reports.iso_report import RpmsOnIsoReport
-from .reports.obs_report import PackagesInObsReport
-from .reports.obs_requests import ObsSubmitRequestsReport
-from .reports.gitea_report import PackagesInGiteaReport
-from .reports.gitea_pull_requests import GiteaPullRequestsReport
+from .reports.iso_report import IsoPackagesReport
+from .reports.obs_report import ObsPackagesReport
+from .reports.obs_requests import ObsRequestsReport
+from .reports.gitea_report import GiteaPackagesReport
+from .reports.gitea_pull_requests import GiteaRequestsReport
 from .utils import CACHE_DIR, ensure_dir
 
 
@@ -125,7 +125,7 @@ def main() -> None:
             }
             mirrorcache_config = MirrorcacheConfig(**mc_args)
 
-            iso_report = RpmsOnIsoReport(mirrorcache_config)
+            iso_report = IsoPackagesReport(mirrorcache_config)
             latest_iso_url, iso_packages = iso_report.run()
 
             iso_results.append(
@@ -148,7 +148,7 @@ def main() -> None:
 
         elif repo_type == "obs":
             obs_config = ObsConfig(**repo)
-            obs_report = PackagesInObsReport(
+            obs_report = ObsPackagesReport(
                 obs_config,
                 binary_patterns_by_source,
                 config.spec_names_by_package,
@@ -170,7 +170,7 @@ def main() -> None:
                     all_git_hashes[name].update(hashes)
 
             if obs_config.submit_requests:
-                requests_report = ObsSubmitRequestsReport(
+                requests_report = ObsRequestsReport(
                     obs_config,
                     binary_patterns_by_source,
                     no_cache=args.no_command_cache,
@@ -187,7 +187,7 @@ def main() -> None:
 
         elif repo_type == "gitea":
             gitea_config = GiteaConfig(**repo)
-            gitea_report = PackagesInGiteaReport(
+            gitea_report = GiteaPackagesReport(
                 gitea_config,
                 binary_patterns_by_source,
                 config.spec_names_by_package,
@@ -210,7 +210,7 @@ def main() -> None:
                         all_git_hashes[name] = set()
                     all_git_hashes[name].update(hashes)
 
-            gitea_pr_report = GiteaPullRequestsReport(
+            gitea_pr_report = GiteaRequestsReport(
                 gitea_config,
                 binary_patterns_by_source,
                 no_cache=args.no_command_cache,

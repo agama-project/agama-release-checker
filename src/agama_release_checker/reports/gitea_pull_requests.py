@@ -8,7 +8,13 @@ from agama_release_checker.caching import run_cached_command
 from agama_release_checker.utils import CACHE_DIR
 
 
-class GiteaPullRequestsReport:
+class GiteaRequestsReport:
+    """Report on open pull requests in a Gitea repository.
+
+    Gitea is a general git technology but in openSUSE context we use it with the
+    specific meaning "VCS storing source tarball blobs for OBS".
+    """
+
     def __init__(
         self,
         config: GiteaConfig,

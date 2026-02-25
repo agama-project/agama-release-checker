@@ -2,7 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 from typing import List, Dict, Any
 
-from agama_release_checker.reports.gitea_pull_requests import GiteaPullRequestsReport
+from agama_release_checker.reports.gitea_pull_requests import GiteaRequestsReport
 from agama_release_checker.models import GiteaConfig, GiteaPullRequest
 
 
@@ -36,7 +36,7 @@ def test_gitea_pull_requests_report(mock_run):
         "rubygem-agama-yast": ["rubygem-agama-yast"],
     }
 
-    report = GiteaPullRequestsReport(config, binary_patterns_by_source)
+    report = GiteaRequestsReport(config, binary_patterns_by_source)
     _, prs = report.run()
 
     assert len(prs) == 1
@@ -85,7 +85,7 @@ def test_gitea_pull_requests_report_branch_filtering(mock_run):
         "agama": ["agama"],
     }
 
-    report = GiteaPullRequestsReport(config, binary_patterns_by_source)
+    report = GiteaRequestsReport(config, binary_patterns_by_source)
     _, prs = report.run()
 
     # Should only have one PR because of branch filtering
