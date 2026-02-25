@@ -50,10 +50,10 @@ def main() -> None:
         help="Enable verbose logging (DEBUG level)",
     )
     parser.add_argument(
-        "-s",
-        "--stage",
+        "-r",
+        "--repo",
         action="append",
-        help="Specify the name of the stage to process. Can be used multiple times.",
+        help="Specify the name of the repository to process. Can be used multiple times.",
     )
     parser.add_argument(
         "--no-command-cache",
@@ -105,21 +105,21 @@ def main() -> None:
     all_git_hashes: Dict[str, Set[str]] = {}
     binary_patterns_by_source: Dict[str, List[str]] = config.binary_patterns_by_source
 
-    stages_to_process = [
-        s
-        for s in config.stages
-        if (args.internal or not s.get("internal", False))
-        and (not args.stage or s.get("name") in args.stage)
+    repos_to_process = [
+        r
+        for r in config.repositories
+        if (args.internal or not r.get("internal", False))
+        and (not args.repo or r.get("name") in args.repo)
     ]
 
-    if not stages_to_process:
-        logging.warning("No stages to process found.")
+    if not repos_to_process:
+        logging.warning("No repositories to process found.")
 
-    for stage in stages_to_process:
-        stage_type = stage.get("type")
-        if stage_type == "mirrorcache":
+    for repo in repos_to_process:
+        repo_type = repo.get("type")
+        if repo_type == "mirrorcache":
             mc_args = {
-                k: stage[k] for k in ["type", "name", "url", "files"] if k in stage
+                k: repo[k] for k in ["type", "name", "url", "files"] if k in repo
             }
             mirrorcache_config = MirrorcacheConfig(**mc_args)
 
@@ -139,14 +139,14 @@ def main() -> None:
             )
             if iso_packages:
                 new_hashes = extract_git_hashes(iso_packages, binary_patterns_by_source)
-                for repo, hashes in new_hashes.items():
-                    if repo not in all_git_hashes:
-                        all_git_hashes[repo] = set()
-                    all_git_hashes[repo].update(hashes)
+                for name, hashes in new_hashes.items():
+                    if name not in all_git_hashes:
+                        all_git_hashes[name] = set()
+                    all_git_hashes[name].update(hashes)
 
-        elif stage_type == "obsproject":
+        elif repo_type == "obs":
             obs_report = PackagesInObsReport(
-                stage,
+                repo,
                 binary_patterns_by_source,
                 config.spec_names_by_package,
                 no_cache=args.no_command_cache,
@@ -156,22 +156,22 @@ def main() -> None:
             obs_results.append(
                 (
                     {
-                        "name": stage.get("name", "Unknown OBS Project"),
-                        "url": stage.get("url"),
+                        "name": repo.get("name", "Unknown OBS Project"),
+                        "url": repo.get("url"),
                     },
                     obs_packages,
                 )
             )
             if obs_packages:
                 new_hashes = extract_git_hashes(obs_packages, binary_patterns_by_source)
-                for repo, hashes in new_hashes.items():
-                    if repo not in all_git_hashes:
-                        all_git_hashes[repo] = set()
-                    all_git_hashes[repo].update(hashes)
+                for name, hashes in new_hashes.items():
+                    if name not in all_git_hashes:
+                        all_git_hashes[name] = set()
+                    all_git_hashes[name].update(hashes)
 
-            if stage.get("submit_requests"):
+            if repo.get("submit_requests"):
                 requests_report = ObsSubmitRequestsReport(
-                    stage,
+                    repo,
                     binary_patterns_by_source,
                     no_cache=args.no_command_cache,
                     recent_requests=args.recent_rq,
@@ -181,16 +181,16 @@ def main() -> None:
                     obs_requests_results.append(
                         (
                             {
-                                "name": stage.get("name", "Unknown OBS Project"),
-                                "url": stage.get("url"),
+                                "name": repo.get("name", "Unknown OBS Project"),
+                                "url": repo.get("url"),
                             },
                             requests,
                         )
                     )
 
-        elif stage_type == "giteaproject":
+        elif repo_type == "gitea":
             gitea_report = PackagesInGiteaReport(
-                stage,
+                repo,
                 binary_patterns_by_source,
                 config.spec_names_by_package,
                 no_cache=args.no_command_cache,
@@ -200,8 +200,8 @@ def main() -> None:
             gitea_results.append(
                 (
                     {
-                        "name": stage.get("name", "Unknown Gitea Project"),
-                        "url": stage.get("url"),
+                        "name": repo.get("name", "Unknown Gitea Project"),
+                        "url": repo.get("url"),
                     },
                     gitea_packages,
                 )
@@ -210,27 +210,27 @@ def main() -> None:
                 new_hashes = extract_git_hashes(
                     gitea_packages, binary_patterns_by_source
                 )
-                for repo, hashes in new_hashes.items():
-                    if repo not in all_git_hashes:
-                        all_git_hashes[repo] = set()
-                    all_git_hashes[repo].update(hashes)
+                for name, hashes in new_hashes.items():
+                    if name not in all_git_hashes:
+                        all_git_hashes[name] = set()
+                    all_git_hashes[name].update(hashes)
 
             gitea_pr_report = GiteaPullRequestsReport(
-                stage, binary_patterns_by_source, no_cache=args.no_command_cache
+                repo, binary_patterns_by_source, no_cache=args.no_command_cache
             )
             _, prs = gitea_pr_report.run()
             if prs:
                 gitea_pr_results.append(
                     (
                         {
-                            "name": stage.get("name", "Unknown Gitea Project"),
-                            "url": stage.get("url"),
+                            "name": repo.get("name", "Unknown Gitea Project"),
+                            "url": repo.get("url"),
                         },
                         prs,
                     )
                 )
 
-        elif stage_type == "git":
+        elif repo_type == "git":
             pass
 
     if iso_results:

@@ -17,13 +17,13 @@ class RpmsOnIsoReport:
     def __init__(self, config: MirrorcacheConfig):
         self.config = config
 
-    def _cleanup_old_isos(self, stage_dir: Path, keep: int = 3) -> None:
-        """Keeps only the 'keep' newest ISO files in the stage directory."""
-        if not stage_dir.exists():
+    def _cleanup_old_isos(self, repo_dir: Path, keep: int = 3) -> None:
+        """Keeps only the 'keep' newest ISO files in the repository directory."""
+        if not repo_dir.exists():
             return
 
         files = [
-            f for f in stage_dir.iterdir() if f.is_file() and f.name.endswith(".iso")
+            f for f in repo_dir.iterdir() if f.is_file() and f.name.endswith(".iso")
         ]
         if len(files) <= keep:
             return
@@ -46,13 +46,11 @@ class RpmsOnIsoReport:
         base_url = self.config.url
         patterns = self.config.files
 
-        # Directory structure: CACHE_DIR/stage_type/stage_name/
-        stage_dir = CACHE_DIR / self.config.type / self.config.name
-        ensure_dir(stage_dir)
+        # Directory structure: CACHE_DIR/repo_type/repo_name/
+        repo_dir = CACHE_DIR / self.config.type / self.config.name
+        ensure_dir(repo_dir)
 
-        iso_urls = find_iso_urls(
-            base_url, patterns, cache_file=stage_dir / "index.html"
-        )
+        iso_urls = find_iso_urls(base_url, patterns, cache_file=repo_dir / "index.html")
 
         if not iso_urls:
             logging.warning(f"No ISOs found matching patterns {patterns} at {base_url}")
@@ -63,7 +61,7 @@ class RpmsOnIsoReport:
         logging.debug(f"Determined latest ISO: {latest_iso_url}")
 
         iso_filename = latest_iso_url.split("/")[-1]
-        iso_filepath = stage_dir / iso_filename
+        iso_filepath = repo_dir / iso_filename
 
         if not iso_filepath.exists():
             if not download_file(latest_iso_url, iso_filepath):
@@ -77,7 +75,7 @@ class RpmsOnIsoReport:
                 pass
 
         # Cleanup old ISOs
-        self._cleanup_old_isos(stage_dir)
+        self._cleanup_old_isos(repo_dir)
 
         mount_point = CACHE_DIR / "mounts" / self.config.name
         ensure_dir(mount_point)

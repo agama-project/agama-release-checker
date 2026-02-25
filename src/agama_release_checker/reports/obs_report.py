@@ -39,11 +39,9 @@ class PackagesInObsReport:
         if cmd == ["osc", "version"]:
             return run_cached_command(cmd, cache_dir=None)
 
-        # Directory structure: CACHE_DIR/obsproject/stage_name/osc_commands/
-        stage_name = self.config.get("name", "unknown")
-        # Ensure we don't have spaces or invalid chars in directory name if possible
-        # but stage_name is from config. usually safe.
-        cache_dir = CACHE_DIR / "obsproject" / stage_name / "osc_commands"
+        # Directory structure: CACHE_DIR/obs/repo_name/osc_commands/
+        repo_name = self.config.get("name", "unknown")
+        cache_dir = CACHE_DIR / "obs" / repo_name / "osc_commands"
 
         # run_cached_command will handle directory creation and caching
         return run_cached_command(cmd, cache_dir=cache_dir, force_refresh=self.no_cache)

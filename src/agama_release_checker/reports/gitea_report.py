@@ -52,9 +52,9 @@ class PackagesInGiteaReport:
 
     def _fetch_package_data(self, package_name: str) -> Optional[List[SourcePackage]]:
         remote_url = self._get_remote_url(package_name)
-        stage_name = self.config.get("name", "unknown")
+        config_name = self.config.get("name", "unknown")
         branch = self.config.get("branch")
-        repo_path = CACHE_DIR / "giteaproject" / stage_name / package_name
+        repo_path = CACHE_DIR / "gitea" / config_name / package_name
 
         if self.no_cache and repo_path.exists():
             import shutil

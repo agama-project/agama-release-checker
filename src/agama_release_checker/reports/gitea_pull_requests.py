@@ -35,7 +35,7 @@ class GiteaPullRequestsReport:
         repo = self._get_repo_path(package_name)
         login = self._get_login()
         branch = self.config.get("branch")
-        stage_name = self.config.get("name", "unknown")
+        config_name = self.config.get("name", "unknown")
 
         cmd = [
             "tea",
@@ -50,7 +50,7 @@ class GiteaPullRequestsReport:
             "index,state,author,url,title,mergeable,base,created,updated,comments",
         ]
 
-        cache_dir = CACHE_DIR / "giteaproject" / stage_name / "tea_commands"
+        cache_dir = CACHE_DIR / "gitea" / config_name / "tea_commands"
 
         try:
             success, output = run_cached_command(

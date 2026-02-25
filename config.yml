@@ -1,4 +1,4 @@
-stages:
+repositories:
 - url: https://github.com/agama-project/agama/
   type: git
   name: agama
@@ -27,25 +27,25 @@ stages:
     - agama-installer.x86_64-*-Build*.iso
 
 - url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel
-  type: obsproject
+  type: obs
   name: obs-sm-A-Devel
 
 - url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Release
-  type: obsproject
+  type: obs
   name: obs-sm-A-Release
 
 - url: https://build.opensuse.org/project/show/openSUSE:Factory
-  type: obsproject
+  type: obs
   name: obs-factory
   submit_requests: true
 
 - url: https://src.suse.de/pool/
-  type: giteaproject
+  type: gitea
   branch: slfo-main
   name: ibs-pool
 
 - url: https://src.suse.de/pool/
-  type: giteaproject
+  type: gitea
   branch: slfo-1.2
   name: ibs-pool-slfo1.2
 

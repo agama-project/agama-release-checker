@@ -78,24 +78,22 @@ class GiteaConfig(StageConfig):
 
 @dataclass
 class AppConfig:
-    stages: List[Dict[str, Any]]
+    repositories: List[Dict[str, Any]]
     binary_patterns_by_source: Dict[str, List[str]]
     spec_names_by_package: Dict[str, List[str]] = field(default_factory=dict)
 
     @property
     def mirrorcache_configs(self) -> List[MirrorcacheConfig]:
         return [
-            MirrorcacheConfig(**s)
-            for s in self.stages
-            if s.get("type") == "mirrorcache"
+            MirrorcacheConfig(**r)
+            for r in self.repositories
+            if r.get("type") == "mirrorcache"
         ]
 
     @property
     def git_configs(self) -> List[GitConfig]:
-        return [GitConfig(**s) for s in self.stages if s.get("type") == "git"]
+        return [GitConfig(**r) for r in self.repositories if r.get("type") == "git"]
 
     @property
     def gitea_configs(self) -> List[GiteaConfig]:
-        return [
-            GiteaConfig(**s) for s in self.stages if s.get("type") == "giteaproject"
-        ]
+        return [GiteaConfig(**r) for r in self.repositories if r.get("type") == "gitea"]
