@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple, Set
 
 from .config import load_config
-from .iso import check_command
+from .iso_utils import check_command
 from .models import MirrorcacheConfig, AppConfig, Package, ObsRequest, GiteaPullRequest
 from .reporting import (
     print_iso_results,

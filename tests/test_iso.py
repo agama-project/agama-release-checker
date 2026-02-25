@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from agama_release_checker.iso import get_packages_from_metadata_file
+from agama_release_checker.iso_utils import get_packages_from_metadata_file
 from agama_release_checker.models import Package
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

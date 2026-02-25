@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from agama_release_checker.iso import (
+from agama_release_checker.iso_utils import (
     mount_iso,
     unmount_iso,
     get_packages_from_metadata,
