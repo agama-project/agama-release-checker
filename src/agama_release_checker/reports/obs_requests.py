@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from agama_release_checker.models import ObsConfig, ObsRequest
+from agama_release_checker.reporting import print_markdown_table
 from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
 
@@ -151,3 +152,24 @@ class ObsRequestsReport:
                 )
 
         return None, requests
+
+    def render(self, requests: List[ObsRequest]) -> None:
+        """Renders the OBS submit requests report as markdown."""
+        print(f"\n## OBS Submit Requests: {self.config.name}\n")
+        print(f"Project: {self.config.url}\n")
+
+        if not requests:
+            print("  (No pending requests found)")
+            return
+
+        headers = ["Updated", "Created", "ID", "State", "Source", "Target"]
+        rows: List[List[str]] = []
+        for req in requests:
+            source = f"{req.source_project}/{req.source_package}"
+            target = f"{req.target_project}/{req.target_package}"
+            rows.append(
+                [req.updated_at, req.created_at, req.id, req.state, source, target]
+            )
+
+        rows.sort(key=lambda x: x[0])
+        print_markdown_table(headers, rows)

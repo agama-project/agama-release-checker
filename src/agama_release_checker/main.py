@@ -3,7 +3,7 @@ import logging
 import sys
 import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Set
+from typing import List, Dict, Optional, Tuple, Set
 
 from .config import load_config
 from .iso_utils import check_command
@@ -18,12 +18,7 @@ from .models import (
     GiteaPullRequest,
 )
 from .reporting import (
-    print_iso_results,
-    print_obs_results,
-    print_gitea_results,
-    print_gitea_pull_requests_results,
     print_git_report,
-    print_obs_requests_results,
     extract_git_hashes,
 )
 from .reports.iso_report import IsoPackagesReport
@@ -98,12 +93,12 @@ def main() -> None:
     config: AppConfig = load_config(Path("config.yml"))
 
     iso_results: List[
-        Tuple[Dict[str, Any], Optional[str], Optional[List[BinaryPackage]]]
+        Tuple[IsoPackagesReport, Optional[str], Optional[List[BinaryPackage]]]
     ] = []
-    obs_results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]] = []
-    gitea_results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]] = []
-    gitea_pr_results: List[Tuple[Dict[str, Any], List[GiteaPullRequest]]] = []
-    obs_requests_results: List[Tuple[Dict[str, Any], List[ObsRequest]]] = []
+    obs_results: List[Tuple[ObsPackagesReport, Optional[List[SourcePackage]]]] = []
+    gitea_results: List[Tuple[GiteaPackagesReport, Optional[List[SourcePackage]]]] = []
+    gitea_pr_results: List[Tuple[GiteaRequestsReport, List[GiteaPullRequest]]] = []
+    obs_requests_results: List[Tuple[ObsRequestsReport, List[ObsRequest]]] = []
     all_git_hashes: Dict[str, Set[str]] = {}
     binary_patterns_by_source: Dict[str, List[str]] = config.binary_patterns_by_source
 
@@ -128,17 +123,7 @@ def main() -> None:
             iso_report = IsoPackagesReport(mirrorcache_config)
             latest_iso_url, iso_packages = iso_report.run()
 
-            iso_results.append(
-                (
-                    {
-                        "name": mirrorcache_config.name,
-                        "url": mirrorcache_config.url,
-                        "files": mirrorcache_config.files,
-                    },
-                    latest_iso_url,
-                    iso_packages,
-                )
-            )
+            iso_results.append((iso_report, latest_iso_url, iso_packages))
             if iso_packages:
                 new_hashes = extract_git_hashes(iso_packages, binary_patterns_by_source)
                 for name, hashes in new_hashes.items():
@@ -156,12 +141,7 @@ def main() -> None:
             )
             latest_url, obs_packages = obs_report.run()
 
-            obs_results.append(
-                (
-                    {"name": obs_config.name, "url": obs_config.url},
-                    obs_packages,
-                )
-            )
+            obs_results.append((obs_report, obs_packages))
             if obs_packages:
                 new_hashes = extract_git_hashes(obs_packages, binary_patterns_by_source)
                 for name, hashes in new_hashes.items():
@@ -178,12 +158,7 @@ def main() -> None:
                 )
                 _, requests = requests_report.run()
                 if requests:
-                    obs_requests_results.append(
-                        (
-                            {"name": obs_config.name, "url": obs_config.url},
-                            requests,
-                        )
-                    )
+                    obs_requests_results.append((requests_report, requests))
 
         elif repo_type == "gitea":
             gitea_config = GiteaConfig(**repo)
@@ -195,12 +170,7 @@ def main() -> None:
             )
             _, gitea_packages = gitea_report.run()
 
-            gitea_results.append(
-                (
-                    {"name": gitea_config.name, "url": gitea_config.url},
-                    gitea_packages,
-                )
-            )
+            gitea_results.append((gitea_report, gitea_packages))
             if gitea_packages:
                 new_hashes = extract_git_hashes(
                     gitea_packages, binary_patterns_by_source
@@ -217,34 +187,21 @@ def main() -> None:
             )
             _, prs = gitea_pr_report.run()
             if prs:
-                gitea_pr_results.append(
-                    (
-                        {"name": gitea_config.name, "url": gitea_config.url},
-                        prs,
-                    )
-                )
+                gitea_pr_results.append((gitea_pr_report, prs))
 
         elif repo_type == "git":
             pass
 
-    if iso_results:
-        print_iso_results(iso_results, binary_patterns_by_source)
-    if obs_results:
-        print_obs_results(
-            obs_results,
-            list(binary_patterns_by_source.keys()),
-            config.spec_names_by_package,
-        )
-    if gitea_results:
-        print_gitea_results(
-            gitea_results,
-            list(binary_patterns_by_source.keys()),
-            config.spec_names_by_package,
-        )
-    if gitea_pr_results:
-        print_gitea_pull_requests_results(gitea_pr_results)
-    if obs_requests_results:
-        print_obs_requests_results(obs_requests_results)
+    for iso_rpt, latest_iso_url, iso_pkgs in iso_results:
+        iso_rpt.render(latest_iso_url, iso_pkgs, binary_patterns_by_source)
+    for obs_rpt, obs_pkgs in obs_results:
+        obs_rpt.render(obs_pkgs)
+    for gitea_rpt, gitea_pkgs in gitea_results:
+        gitea_rpt.render(gitea_pkgs)
+    for pr_rpt, pr_list in gitea_pr_results:
+        pr_rpt.render(pr_list)
+    for rq_rpt, rq_list in obs_requests_results:
+        rq_rpt.render(rq_list)
 
     print_git_report(all_git_hashes, config.git_configs)
 

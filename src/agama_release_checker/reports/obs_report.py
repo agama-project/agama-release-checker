@@ -1,9 +1,10 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Sequence, Tuple, Set
 from urllib.parse import urlparse
 
 from agama_release_checker.models import ObsConfig, SourcePackage
+from agama_release_checker.reporting import print_markdown_table
 from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
@@ -147,3 +148,38 @@ class ObsPackagesReport:
                     )
 
         return None, packages
+
+    def _print_source_packages_table(self, packages: Sequence[SourcePackage]) -> None:
+        """Prints a formatted table of source packages grouped by OBS package."""
+        pkg_map = {pkg.name: pkg for pkg in packages}
+        all_found: Dict[str, List[SourcePackage]] = {}
+
+        for obs_package in self.binary_patterns_by_source.keys():
+            found = []
+            source_names = self.spec_names_by_package.get(obs_package, [obs_package])
+            for source_name in source_names:
+                if source_name in pkg_map:
+                    found.append(pkg_map[source_name])
+            all_found[obs_package] = sorted(found, key=lambda p: p.name)
+
+        flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
+        if not flat:
+            print("  (No matching packages found in OBS)")
+            return
+
+        headers = ["Source Name", "Name", "Version", "Release"]
+        rows: List[List[str]] = []
+        for source_rpm, found in sorted(all_found.items()):
+            rows.append([source_rpm, "", "", ""])
+            for pkg in found:
+                rows.append(["", pkg.name, pkg.version, pkg.release])
+        print_markdown_table(headers, rows)
+
+    def render(self, packages: Optional[List[SourcePackage]]) -> None:
+        """Renders the OBS packages report as markdown."""
+        print(f"\n## OBS: {self.config.name}\n")
+        print(f"Project: {self.config.url}\n")
+        if packages:
+            self._print_source_packages_table(packages)
+        else:
+            print("  (No packages found)")

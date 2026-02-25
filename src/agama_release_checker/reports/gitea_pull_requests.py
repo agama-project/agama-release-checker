@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from agama_release_checker.models import GiteaConfig, GiteaPullRequest
+from agama_release_checker.reporting import print_markdown_table
 from agama_release_checker.caching import run_cached_command
 from agama_release_checker.utils import CACHE_DIR
 
@@ -99,3 +100,38 @@ class GiteaRequestsReport:
             prs = self._fetch_prs(package_name)
             all_prs.extend(prs)
         return None, all_prs
+
+    def render(self, prs: List[GiteaPullRequest]) -> None:
+        """Renders the Gitea pull requests report as markdown."""
+        print(f"\n## Gitea Pull Requests: {self.config.name}\n")
+        print(f"URL: {self.config.url}\n")
+
+        if not prs:
+            print("  (No matching pull requests found)")
+            return
+
+        headers = [
+            "Updated",
+            "Index",
+            "State",
+            "Mergeable",
+            "Title",
+            "Author",
+            "Comments",
+        ]
+        rows: List[List[str]] = []
+        for pr in prs:
+            rows.append(
+                [
+                    pr.updated_at,
+                    f"[{pr.index}]({pr.url})",
+                    pr.state,
+                    "Yes" if pr.mergeable else "No",
+                    pr.title,
+                    pr.author,
+                    pr.comments,
+                ]
+            )
+
+        rows.sort(key=lambda x: x[0])
+        print_markdown_table(headers, rows)

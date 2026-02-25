@@ -1,7 +1,9 @@
 import logging
 import os
+from typing import Dict, List, Optional, Sequence, Tuple
+
+import fnmatch
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from agama_release_checker.iso_utils import (
     mount_iso,
@@ -10,6 +12,7 @@ from agama_release_checker.iso_utils import (
 )
 from agama_release_checker.models import MirrorcacheConfig, BinaryPackage
 from agama_release_checker.network import find_iso_urls, download_file
+from agama_release_checker.reporting import print_markdown_table
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 
 
@@ -91,3 +94,48 @@ class IsoPackagesReport:
                 except OSError:
                     pass
         return latest_iso_url, None
+
+    def _print_packages_table(
+        self,
+        binary_patterns_by_source: Dict[str, List[str]],
+        packages: Sequence[BinaryPackage],
+    ) -> None:
+        """Prints a formatted table of binary packages grouped by source."""
+        pkg_map = {pkg.name: pkg for pkg in packages}
+        all_found: Dict[str, List[BinaryPackage]] = {}
+
+        for source_rpm, binary_patterns in binary_patterns_by_source.items():
+            found = []
+            for pattern in binary_patterns:
+                for pkg_name, pkg_details in pkg_map.items():
+                    if fnmatch.fnmatch(pkg_name, pattern):
+                        found.append(pkg_details)
+            all_found[source_rpm] = sorted(found, key=lambda p: p.name)
+
+        flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
+        if not flat:
+            print("  (No matching packages found in ISO)")
+            return
+
+        headers = ["Source Name", "Name", "Version", "Release"]
+        rows: List[List[str]] = []
+        for source_rpm, found in sorted(all_found.items()):
+            rows.append([source_rpm, "", "", ""])
+            for pkg in found:
+                rows.append(["", pkg.name, pkg.version, pkg.release])
+        print_markdown_table(headers, rows)
+
+    def render(
+        self,
+        latest_iso_url: Optional[str],
+        packages: Optional[List[BinaryPackage]],
+        binary_patterns_by_source: Dict[str, List[str]],
+    ) -> None:
+        """Renders the ISO packages report as markdown."""
+        print(f"\n## ISO: {self.config.name}\n")
+        if latest_iso_url:
+            print(f"URL: {latest_iso_url}\n")
+        if packages:
+            self._print_packages_table(binary_patterns_by_source, packages)
+        else:
+            print("  (No packages found)")
