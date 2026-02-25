@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 from datetime import datetime
 
-from agama_release_checker.reports.obs_requests import ObsRequestsReport
+from agama_release_checker.reports.obs_requests_report import ObsRequestsReport
 from agama_release_checker.models import ObsConfig, ObsRequest
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -14,7 +14,7 @@ def load_fixture(filename):
         return f.read()
 
 
-@patch("agama_release_checker.reports.obs_requests.run_cached_command")
+@patch("agama_release_checker.reports.obs_requests_report.run_cached_command")
 def test_obs_submit_requests_report(mock_run_cached):
     # Setup mock responses
     def side_effect(cmd, **kwargs):
@@ -61,8 +61,8 @@ def test_obs_submit_requests_report(mock_run_cached):
     assert req.updated_at == "2025-09-05T14:55:46"
 
 
-@patch("agama_release_checker.reports.obs_requests.datetime")
-@patch("agama_release_checker.reports.obs_requests.run_cached_command")
+@patch("agama_release_checker.reports.obs_requests_report.datetime")
+@patch("agama_release_checker.reports.obs_requests_report.run_cached_command")
 def test_obs_submit_requests_report_recent(mock_run_cached, mock_datetime):
     # Setup mock date
     fixed_now = datetime(2025, 2, 17)

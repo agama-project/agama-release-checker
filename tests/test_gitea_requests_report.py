@@ -2,11 +2,11 @@ import json
 from unittest.mock import MagicMock, patch
 from typing import List, Dict, Any
 
-from agama_release_checker.reports.gitea_pull_requests import GiteaRequestsReport
+from agama_release_checker.reports.gitea_requests_report import GiteaRequestsReport
 from agama_release_checker.models import GiteaConfig, GiteaPullRequest
 
 
-@patch("agama_release_checker.reports.gitea_pull_requests.run_cached_command")
+@patch("agama_release_checker.reports.gitea_requests_report.run_cached_command")
 def test_gitea_pull_requests_report(mock_run):
     # Mock data from tea
     tea_output = [
@@ -57,7 +57,7 @@ def test_gitea_pull_requests_report(mock_run):
     assert kwargs["cache_dir"] is not None
 
 
-@patch("agama_release_checker.reports.gitea_pull_requests.run_cached_command")
+@patch("agama_release_checker.reports.gitea_requests_report.run_cached_command")
 def test_gitea_pull_requests_report_branch_filtering(mock_run):
     # Mock data from tea with different base branches
     tea_output = [

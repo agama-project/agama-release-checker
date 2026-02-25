@@ -4,15 +4,15 @@ import pytest  # type: ignore
 import subprocess
 
 from agama_release_checker.models import GiteaConfig
-from agama_release_checker.reports.gitea_report import GiteaPackagesReport
+from agama_release_checker.reports.gitea_packages_report import GiteaPackagesReport
 
 
 @patch(
-    "agama_release_checker.reports.gitea_report.GiteaPackagesReport._run_git_command"
+    "agama_release_checker.reports.gitea_packages_report.GiteaPackagesReport._run_git_command"
 )
-@patch("agama_release_checker.reports.gitea_report.Path.exists")
-@patch("agama_release_checker.reports.gitea_report.Path.read_text")
-@patch("agama_release_checker.reports.gitea_report.ensure_dir")
+@patch("agama_release_checker.reports.gitea_packages_report.Path.exists")
+@patch("agama_release_checker.reports.gitea_packages_report.Path.read_text")
+@patch("agama_release_checker.reports.gitea_packages_report.ensure_dir")
 def test_packages_in_gitea_report(
     mock_ensure_dir, mock_read_text, mock_exists, mock_run_git
 ):
@@ -85,10 +85,10 @@ def test_get_remote_url():
 
 
 @patch(
-    "agama_release_checker.reports.gitea_report.GiteaPackagesReport._run_git_command"
+    "agama_release_checker.reports.gitea_packages_report.GiteaPackagesReport._run_git_command"
 )
-@patch("agama_release_checker.reports.gitea_report.Path.exists")
-@patch("agama_release_checker.reports.gitea_report.ensure_dir")
+@patch("agama_release_checker.reports.gitea_packages_report.Path.exists")
+@patch("agama_release_checker.reports.gitea_packages_report.ensure_dir")
 def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
     # Repo does not exist
     mock_exists.return_value = False
@@ -133,9 +133,9 @@ def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
 
 
 @patch(
-    "agama_release_checker.reports.gitea_report.GiteaPackagesReport._run_git_command"
+    "agama_release_checker.reports.gitea_packages_report.GiteaPackagesReport._run_git_command"
 )
-@patch("agama_release_checker.reports.gitea_report.Path.exists")
+@patch("agama_release_checker.reports.gitea_packages_report.Path.exists")
 def test_gitea_update_with_branch(mock_exists, mock_run_git):
     # Repo exists
     mock_exists.return_value = True

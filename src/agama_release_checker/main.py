@@ -21,11 +21,11 @@ from .reporting import (
     print_git_report,
     extract_git_hashes,
 )
-from .reports.iso_report import IsoPackagesReport
-from .reports.obs_report import ObsPackagesReport
-from .reports.obs_requests import ObsRequestsReport
-from .reports.gitea_report import GiteaPackagesReport
-from .reports.gitea_pull_requests import GiteaRequestsReport
+from .reports.iso_packages_report import IsoPackagesReport
+from .reports.obs_packages_report import ObsPackagesReport
+from .reports.obs_requests_report import ObsRequestsReport
+from .reports.gitea_packages_report import GiteaPackagesReport
+from .reports.gitea_requests_report import GiteaRequestsReport
 from .utils import CACHE_DIR, ensure_dir
 
 

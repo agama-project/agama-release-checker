@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest  # type: ignore
 
 from agama_release_checker.models import ObsConfig
-from agama_release_checker.reports.obs_report import ObsPackagesReport
+from agama_release_checker.reports.obs_packages_report import ObsPackagesReport
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -15,7 +15,7 @@ def load_fixture(filename):
         return f.read()
 
 
-@patch("agama_release_checker.reports.obs_report.run_cached_command")
+@patch("agama_release_checker.reports.obs_packages_report.run_cached_command")
 def test_packages_in_obs_report(mock_run_cached):
     # Setup mock responses
     def side_effect(cmd, **kwargs):
@@ -105,7 +105,7 @@ def test_packages_in_obs_report(mock_run_cached):
     assert pkg_map["agama-yast"].version == "19.pre.devel1558.7e90c6ef1"
 
 
-@patch("agama_release_checker.reports.obs_report.run_cached_command")
+@patch("agama_release_checker.reports.obs_packages_report.run_cached_command")
 def test_osc_missing(mock_run_cached):
     # Simulate run_cached_command returning failure (e.g. osc not found)
     mock_run_cached.return_value = (False, "")

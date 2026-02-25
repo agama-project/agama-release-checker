@@ -125,7 +125,7 @@ class GiteaPackagesReport:
         # Determine which files to checkout
         files_to_get = []
 
-        # logic for obsinfo similar to obs_report
+        # logic for obsinfo similar to obs_packages_report
         obsinfo_file = None
         target_obsinfo = f"{package_name}.obsinfo"
         if target_obsinfo in repo_files:
