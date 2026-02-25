@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from agama_release_checker.models import Package
+from agama_release_checker.models import SourcePackage
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
 
@@ -50,7 +50,7 @@ class PackagesInGiteaReport:
             logging.error(f"Git command failed: {' '.join(cmd)}\n{e.stderr}")
             return False, e.stderr
 
-    def _fetch_package_data(self, package_name: str) -> Optional[List[Package]]:
+    def _fetch_package_data(self, package_name: str) -> Optional[List[SourcePackage]]:
         remote_url = self._get_remote_url(package_name)
         stage_name = self.config.get("name", "unknown")
         branch = self.config.get("branch")
@@ -160,7 +160,7 @@ class PackagesInGiteaReport:
                 content = obsinfo_path.read_text()
                 shared_version = parse_obsinfo(content) or ""
 
-        packages: List[Package] = []
+        packages: List[SourcePackage] = []
         for spec_basename in spec_basenames:
             version = shared_version
             release = "0"
@@ -179,18 +179,17 @@ class PackagesInGiteaReport:
 
             if version:
                 packages.append(
-                    Package(
+                    SourcePackage(
                         name=spec_basename,
                         version=version,
                         release=release,
-                        arch="src",
                     )
                 )
         return packages
 
-    def run(self) -> Tuple[Optional[str], Optional[List[Package]]]:
+    def run(self) -> Tuple[Optional[str], Optional[List[SourcePackage]]]:
         logging.info(f"Processing Gitea project: {self.config.get('name')}")
-        all_packages: List[Package] = []
+        all_packages: List[SourcePackage] = []
         for package_name in self.rpm_map.keys():
             pkgs = self._fetch_package_data(package_name)
             if pkgs:

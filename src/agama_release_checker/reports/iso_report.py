@@ -8,7 +8,7 @@ from agama_release_checker.iso_utils import (
     unmount_iso,
     get_packages_from_metadata,
 )
-from agama_release_checker.models import MirrorcacheConfig, Package
+from agama_release_checker.models import MirrorcacheConfig, BinaryPackage
 from agama_release_checker.network import find_iso_urls, download_file
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 
@@ -40,7 +40,7 @@ class RpmsOnIsoReport:
             except OSError as e:
                 logging.warning(f"Failed to remove old ISO {f.name}: {e}")
 
-    def run(self) -> Tuple[Optional[str], Optional[List[Package]]]:
+    def run(self) -> Tuple[Optional[str], Optional[List[BinaryPackage]]]:
         """Processes a single mirrorcache configuration."""
         logging.info(f"Processing mirrorcache: {self.config.name}")
         base_url = self.config.url

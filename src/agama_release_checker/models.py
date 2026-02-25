@@ -3,11 +3,28 @@ from typing import List, Dict, Any, Optional
 
 
 @dataclass
-class Package:
+class BinaryPackage:
+    """An RPM binary package found on an ISO or in a repository.
+
+    Fields match the JSON metadata format used in ISO LiveOS/.packages.json.
+    """
+
     name: str
     version: str
     release: str
     arch: str
+
+
+@dataclass
+class SourcePackage:
+    """A distro source package in OBS or Gitea.
+
+    Unlike BinaryPackage, source packages have no arch field.
+    """
+
+    name: str
+    version: str
+    release: str
 
 
 @dataclass

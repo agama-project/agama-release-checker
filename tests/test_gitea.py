@@ -4,7 +4,6 @@ import pytest  # type: ignore
 import subprocess
 
 from agama_release_checker.reports.gitea_report import PackagesInGiteaReport
-from agama_release_checker.models import Package
 
 
 @patch(

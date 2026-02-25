@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import List, Dict, Any
-from .models import Package
+from .models import BinaryPackage
 
 
 def check_command(command: str) -> bool:
@@ -52,7 +52,9 @@ def unmount_iso(mount_point: Path) -> bool:
         return False
 
 
-def get_packages_from_metadata_file(packages_json_maybe_gz: Path) -> List[Package]:
+def get_packages_from_metadata_file(
+    packages_json_maybe_gz: Path,
+) -> List[BinaryPackage]:
     """
     Parses a .packages.json.gz or .packages.json file to get a list of all packages.
     """
@@ -64,7 +66,7 @@ def get_packages_from_metadata_file(packages_json_maybe_gz: Path) -> List[Packag
     try:
         with gzip.open(packages_json_maybe_gz, "rt", encoding="utf-8") as f:
             data = json.load(f)
-            return [Package(**p) for p in data]
+            return [BinaryPackage(**p) for p in data]
     except OSError as e:
         logging.debug(
             f"Failed to parse gzipped metadata file {packages_json_maybe_gz} due to OSError: {e}. Trying plain JSON."
@@ -80,7 +82,7 @@ def get_packages_from_metadata_file(packages_json_maybe_gz: Path) -> List[Packag
     try:
         with open(packages_json_maybe_gz, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return [Package(**p) for p in data]
+            return [BinaryPackage(**p) for p in data]
     except (json.JSONDecodeError, KeyError) as e:
         logging.error(
             f"Failed to parse plain metadata file {packages_json_maybe_gz}: {e}"
@@ -90,7 +92,7 @@ def get_packages_from_metadata_file(packages_json_maybe_gz: Path) -> List[Packag
     return []  # Should not reach here if file exists and is valid JSON/GZIP-JSON
 
 
-def get_packages_from_metadata(mount_point: Path) -> List[Package]:
+def get_packages_from_metadata(mount_point: Path) -> List[BinaryPackage]:
     """
     Parses LiveOS/.packages.json.gz or LiveOS/.packages.json to get a list of all packages.
     """

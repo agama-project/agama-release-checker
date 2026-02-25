@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Set
 from urllib.parse import urlparse
 
-from agama_release_checker.models import Package
+from agama_release_checker.models import SourcePackage
 from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
@@ -68,7 +68,7 @@ class PackagesInObsReport:
             return output
         return ""
 
-    def run(self) -> Tuple[Optional[str], Optional[List[Package]]]:
+    def run(self) -> Tuple[Optional[str], Optional[List[SourcePackage]]]:
         project = self._get_project_name()
         if not project:
             logging.error(
@@ -89,7 +89,7 @@ class PackagesInObsReport:
             )
             return None, None
 
-        packages: List[Package] = []
+        packages: List[SourcePackage] = []
 
         for package_name in self.rpm_map.keys():
             if package_name not in project_packages:
@@ -142,11 +142,10 @@ class PackagesInObsReport:
 
                 if version:
                     packages.append(
-                        Package(
+                        SourcePackage(
                             name=spec_basename,
                             version=version,
                             release=release,
-                            arch="src",
                         )
                     )
 

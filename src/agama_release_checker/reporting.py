@@ -1,15 +1,23 @@
 import logging
 import re
-from typing import List, Dict, Any, Set, Optional, Tuple
+from typing import List, Dict, Any, Sequence, Set, Optional, Tuple, Union
 from urllib.parse import urljoin
 import fnmatch
 
-from .models import GitConfig, Package, ObsRequest, GiteaPullRequest
+from .models import (
+    GitConfig,
+    BinaryPackage,
+    SourcePackage,
+    ObsRequest,
+    GiteaPullRequest,
+)
+
+Package = Union[BinaryPackage, SourcePackage]
 from .git_manager import GitManager
 
 
 def extract_git_hashes(
-    packages: List[Package], rpm_map: Dict[str, List[str]]
+    packages: Sequence[Package], rpm_map: Dict[str, List[str]]
 ) -> Dict[str, Set[str]]:
     """Extracts git hashes from the version strings of packages, grouped by source rpm."""
     git_hashes: Dict[str, Set[str]] = {}
@@ -60,7 +68,7 @@ def print_markdown_table(headers: List[str], rows: List[List[str]]) -> None:
 
 
 def print_packages_table(
-    rpm_map: Dict[str, List[str]], packages: List[Package], label: str = "ISO"
+    rpm_map: Dict[str, List[str]], packages: Sequence[BinaryPackage], label: str = "ISO"
 ) -> None:
     """Prints a formatted table of packages."""
 
@@ -98,7 +106,7 @@ def print_packages_table(
 def print_obs_packages_table(
     rpm_map_keys: List[str],
     specs_map: Dict[str, List[str]],
-    packages: List[Package],
+    packages: Sequence[SourcePackage],
 ) -> None:
     """Prints a formatted table of OBS source packages."""
     pkg_map = {pkg.name: pkg for pkg in packages}
@@ -135,7 +143,7 @@ def print_obs_packages_table(
 
 
 def print_iso_results(
-    results: List[Tuple[Dict[str, Any], Optional[str], Optional[List[Package]]]],
+    results: List[Tuple[Dict[str, Any], Optional[str], Optional[List[BinaryPackage]]]],
     rpm_map: Dict[str, List[str]],
 ) -> None:
     """Prints results for ISO images."""
@@ -150,7 +158,7 @@ def print_iso_results(
 
 
 def print_obs_results(
-    results: List[Tuple[Dict[str, Any], Optional[List[Package]]]],
+    results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]],
     rpm_map_keys: List[str],
     specs_map: Dict[str, List[str]],
 ) -> None:
@@ -165,7 +173,7 @@ def print_obs_results(
 
 
 def print_gitea_results(
-    results: List[Tuple[Dict[str, Any], Optional[List[Package]]]],
+    results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]],
     rpm_map_keys: List[str],
     specs_map: Dict[str, List[str]],
 ) -> None:

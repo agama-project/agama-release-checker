@@ -7,7 +7,14 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 
 from .config import load_config
 from .iso_utils import check_command
-from .models import MirrorcacheConfig, AppConfig, Package, ObsRequest, GiteaPullRequest
+from .models import (
+    MirrorcacheConfig,
+    AppConfig,
+    BinaryPackage,
+    SourcePackage,
+    ObsRequest,
+    GiteaPullRequest,
+)
 from .reporting import (
     print_iso_results,
     print_obs_results,
@@ -88,11 +95,11 @@ def main() -> None:
     ensure_dir(CACHE_DIR)
     config: AppConfig = load_config(Path("config.yml"))
 
-    iso_results: List[Tuple[Dict[str, Any], Optional[str], Optional[List[Package]]]] = (
-        []
-    )
-    obs_results: List[Tuple[Dict[str, Any], Optional[List[Package]]]] = []
-    gitea_results: List[Tuple[Dict[str, Any], Optional[List[Package]]]] = []
+    iso_results: List[
+        Tuple[Dict[str, Any], Optional[str], Optional[List[BinaryPackage]]]
+    ] = []
+    obs_results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]] = []
+    gitea_results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]] = []
     gitea_pr_results: List[Tuple[Dict[str, Any], List[GiteaPullRequest]]] = []
     obs_requests_results: List[Tuple[Dict[str, Any], List[ObsRequest]]] = []
     all_git_hashes: Dict[str, Set[str]] = {}
