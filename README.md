@@ -19,3 +19,20 @@ so that this can be made useful for other teams and projects.
 ### License
 
 GPL-2.0-or-later (like Agama itself)
+
+### Installation
+
+Install dependencies with zypper if available:
+
+    zypper install python311-pytest python311-pytest-cov python311-requests-mock \
+        python311-PyYAML python311-requests python311-beautifulsoup4 \
+        python311-mypy python311-black
+
+If zypper is not available, install uv:
+
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+Then install dependencies with:
+
+    uv pip install --python python3.11 '.[test]'
+
