@@ -12,11 +12,11 @@ class GiteaPullRequestsReport:
     def __init__(
         self,
         config: Dict[str, Any],
-        rpm_map: Dict[str, List[str]],
+        binary_patterns_by_source: Dict[str, List[str]],
         no_cache: bool = False,
     ):
         self.config = config
-        self.rpm_map = rpm_map
+        self.binary_patterns_by_source = binary_patterns_by_source
         self.no_cache = no_cache
 
     def _get_repo_path(self, package_name: str) -> str:
@@ -90,7 +90,7 @@ class GiteaPullRequestsReport:
     def run(self) -> Tuple[None, List[GiteaPullRequest]]:
         logging.info(f"Processing Gitea pull requests for: {self.config.get('name')}")
         all_prs: List[GiteaPullRequest] = []
-        for package_name in self.rpm_map.keys():
+        for package_name in self.binary_patterns_by_source.keys():
             prs = self._fetch_prs(package_name)
             all_prs.extend(prs)
         return None, all_prs

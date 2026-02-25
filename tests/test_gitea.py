@@ -46,13 +46,15 @@ def test_packages_in_gitea_report(
         "url": "https://src.suse.de/pool/",
         "name": "ibs-pool",
     }
-    # Only one package in rpm_map for this test
-    rpm_map = {
+    # Only one source package for this test
+    binary_patterns_by_source = {
         "agama": ["agama"],
     }
-    specs_map = {}
+    spec_names_by_package = {}
 
-    report = PackagesInGiteaReport(config, rpm_map, specs_map)
+    report = PackagesInGiteaReport(
+        config, binary_patterns_by_source, spec_names_by_package
+    )
     _, packages = report.run()
 
     assert packages is not None
@@ -103,8 +105,8 @@ def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
         "name": "ibs-pool",
         "branch": "mybranch",
     }
-    rpm_map = {"agama": ["agama"]}
-    report = PackagesInGiteaReport(config, rpm_map, {})
+    binary_patterns_by_source = {"agama": ["agama"]}
+    report = PackagesInGiteaReport(config, binary_patterns_by_source, {})
 
     report.run()
 
@@ -151,8 +153,8 @@ def test_gitea_update_with_branch(mock_exists, mock_run_git):
         "name": "ibs-pool",
         "branch": "mybranch",
     }
-    rpm_map = {"agama": ["agama"]}
-    report = PackagesInGiteaReport(config, rpm_map, {})
+    binary_patterns_by_source = {"agama": ["agama"]}
+    report = PackagesInGiteaReport(config, binary_patterns_by_source, {})
 
     report.run()
 

@@ -37,12 +37,12 @@ def test_obs_submit_requests_report(mock_run_cached):
         "submit_requests": True,
     }
 
-    rpm_map = {
+    binary_patterns_by_source = {
         "agama": ["agama"],
         "agama-web-ui": ["agama-web-ui"],
     }
 
-    report = ObsSubmitRequestsReport(config, rpm_map)
+    report = ObsSubmitRequestsReport(config, binary_patterns_by_source)
     _, requests = report.run()
 
     assert requests is not None
@@ -84,11 +84,13 @@ def test_obs_submit_requests_report_recent(mock_run_cached, mock_datetime):
         "submit_requests": True,
     }
 
-    rpm_map = {
+    binary_patterns_by_source = {
         "agama": ["agama"],
     }
 
-    report = ObsSubmitRequestsReport(config, rpm_map, recent_requests=True)
+    report = ObsSubmitRequestsReport(
+        config, binary_patterns_by_source, recent_requests=True
+    )
     report.run()
 
     # Verify that the correct query was generated

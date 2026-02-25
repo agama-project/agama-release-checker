@@ -13,12 +13,12 @@ class ObsSubmitRequestsReport:
     def __init__(
         self,
         config: Dict[str, Any],
-        rpm_map: Dict[str, List[str]],
+        binary_patterns_by_source: Dict[str, List[str]],
         no_cache: bool = False,
         recent_requests: bool = False,
     ):
         self.config = config
-        self.rpm_map = rpm_map
+        self.binary_patterns_by_source = binary_patterns_by_source
         self.no_cache = no_cache
         self.recent_requests = recent_requests
 
@@ -64,8 +64,8 @@ class ObsSubmitRequestsReport:
 
         requests: List[ObsRequest] = []
 
-        # Iterate over all defined packages in rpm_map
-        for package_name in self.rpm_map.keys():
+        # Iterate over all defined source packages
+        for package_name in self.binary_patterns_by_source.keys():
             if self.recent_requests:
                 cutoff_date = (datetime.now() - timedelta(weeks=2)).strftime("%Y-%m-%d")
                 query = (

@@ -17,12 +17,12 @@ from .git_manager import GitManager
 
 
 def extract_git_hashes(
-    packages: Sequence[Package], rpm_map: Dict[str, List[str]]
+    packages: Sequence[Package], binary_patterns_by_source: Dict[str, List[str]]
 ) -> Dict[str, Set[str]]:
     """Extracts git hashes from the version strings of packages, grouped by source rpm."""
     git_hashes: Dict[str, Set[str]] = {}
     pkg_map = {pkg.name: pkg for pkg in packages}
-    for source_rpm, binary_patterns in rpm_map.items():
+    for source_rpm, binary_patterns in binary_patterns_by_source.items():
         for pattern in binary_patterns:
             for pkg_name, pkg_details in pkg_map.items():
                 if fnmatch.fnmatch(pkg_name, pattern):
@@ -68,14 +68,16 @@ def print_markdown_table(headers: List[str], rows: List[List[str]]) -> None:
 
 
 def print_packages_table(
-    rpm_map: Dict[str, List[str]], packages: Sequence[BinaryPackage], label: str = "ISO"
+    binary_patterns_by_source: Dict[str, List[str]],
+    packages: Sequence[BinaryPackage],
+    label: str = "ISO",
 ) -> None:
     """Prints a formatted table of packages."""
 
     pkg_map = {pkg.name: pkg for pkg in packages}
     all_found_packages_by_source = {}
 
-    for source_rpm, binary_patterns in rpm_map.items():
+    for source_rpm, binary_patterns in binary_patterns_by_source.items():
         found_packages = []
         for pattern in binary_patterns:
             for pkg_name, pkg_details in pkg_map.items():
@@ -104,18 +106,18 @@ def print_packages_table(
 
 
 def print_obs_packages_table(
-    rpm_map_keys: List[str],
-    specs_map: Dict[str, List[str]],
+    source_names: List[str],
+    spec_names_by_package: Dict[str, List[str]],
     packages: Sequence[SourcePackage],
 ) -> None:
     """Prints a formatted table of OBS source packages."""
     pkg_map = {pkg.name: pkg for pkg in packages}
     all_found_packages_by_source = {}
 
-    for obs_package in rpm_map_keys:
+    for obs_package in source_names:
         found_packages = []
         # Get expected source names (specs) for this OBS package
-        source_names = specs_map.get(obs_package, [obs_package])
+        source_names = spec_names_by_package.get(obs_package, [obs_package])
 
         for source_name in source_names:
             if source_name in pkg_map:
@@ -144,7 +146,7 @@ def print_obs_packages_table(
 
 def print_iso_results(
     results: List[Tuple[Dict[str, Any], Optional[str], Optional[List[BinaryPackage]]]],
-    rpm_map: Dict[str, List[str]],
+    binary_patterns_by_source: Dict[str, List[str]],
 ) -> None:
     """Prints results for ISO images."""
     for mirrorcache_config, latest_iso_url, iso_packages in results:
@@ -152,37 +154,37 @@ def print_iso_results(
         if latest_iso_url:
             print(f"URL: {latest_iso_url}\n")
         if iso_packages:
-            print_packages_table(rpm_map, iso_packages, label="ISO")
+            print_packages_table(binary_patterns_by_source, iso_packages, label="ISO")
         else:
             print("  (No packages found)")
 
 
 def print_obs_results(
     results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]],
-    rpm_map_keys: List[str],
-    specs_map: Dict[str, List[str]],
+    source_names: List[str],
+    spec_names_by_package: Dict[str, List[str]],
 ) -> None:
     """Prints results for OBS projects."""
     for obs_config, packages in results:
         print(f"\n## OBS: {obs_config['name']}\n")
         print(f"Project: {obs_config['url']}\n")
         if packages:
-            print_obs_packages_table(rpm_map_keys, specs_map, packages)
+            print_obs_packages_table(source_names, spec_names_by_package, packages)
         else:
             print("  (No packages found)")
 
 
 def print_gitea_results(
     results: List[Tuple[Dict[str, Any], Optional[List[SourcePackage]]]],
-    rpm_map_keys: List[str],
-    specs_map: Dict[str, List[str]],
+    source_names: List[str],
+    spec_names_by_package: Dict[str, List[str]],
 ) -> None:
     """Prints results for Gitea projects."""
     for gitea_config, packages in results:
         print(f"\n## Gitea: {gitea_config['name']}\n")
         print(f"URL: {gitea_config['url']}\n")
         if packages:
-            print_obs_packages_table(rpm_map_keys, specs_map, packages)
+            print_obs_packages_table(source_names, spec_names_by_package, packages)
         else:
             print("  (No packages found)")
 

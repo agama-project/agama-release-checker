@@ -31,11 +31,11 @@ def test_gitea_pull_requests_report(mock_run):
         "name": "ibs-pool-slfo1.2",
         "branch": "slfo-1.2",
     }
-    rpm_map = {
+    binary_patterns_by_source = {
         "rubygem-agama-yast": ["rubygem-agama-yast"],
     }
 
-    report = GiteaPullRequestsReport(config, rpm_map)
+    report = GiteaPullRequestsReport(config, binary_patterns_by_source)
     _, prs = report.run()
 
     assert len(prs) == 1
@@ -79,11 +79,11 @@ def test_gitea_pull_requests_report_branch_filtering(mock_run):
         "name": "ibs-pool-slfo1.2",
         "branch": "slfo-1.2",
     }
-    rpm_map = {
+    binary_patterns_by_source = {
         "agama": ["agama"],
     }
 
-    report = GiteaPullRequestsReport(config, rpm_map)
+    report = GiteaPullRequestsReport(config, binary_patterns_by_source)
     _, prs = report.run()
 
     # Should only have one PR because of branch filtering

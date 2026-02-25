@@ -50,7 +50,7 @@ stages:
   name: ibs-pool-slfo1.2
 
 # maps from obs package to binary rpms (wildcards)
-rpms:
+binary_patterns_by_source:
   agama-web-ui:
   - agama-web-ui
   agama:
@@ -70,7 +70,7 @@ rpms:
 
 # Maps obs package to a list of RPM spec files.
 # If not specified, foo maps to a singleton [foo].
-specs:
+spec_names_by_package:
   rubygem-agama-yast:
   - rubygem-agama-yast
   - agama-yast

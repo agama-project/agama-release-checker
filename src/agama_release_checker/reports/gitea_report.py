@@ -13,13 +13,13 @@ class PackagesInGiteaReport:
     def __init__(
         self,
         config: Dict[str, Any],
-        rpm_map: Dict[str, List[str]],
-        specs_map: Optional[Dict[str, List[str]]] = None,
+        binary_patterns_by_source: Dict[str, List[str]],
+        spec_names_by_package: Optional[Dict[str, List[str]]] = None,
         no_cache: bool = False,
     ):
         self.config = config
-        self.rpm_map = rpm_map
-        self.specs_map = specs_map or {}
+        self.binary_patterns_by_source = binary_patterns_by_source
+        self.spec_names_by_package = spec_names_by_package or {}
         self.no_cache = no_cache
         logging.debug(f"CACHE_DIR={CACHE_DIR}")
 
@@ -133,7 +133,7 @@ class PackagesInGiteaReport:
         if obsinfo_file:
             files_to_get.append(obsinfo_file)
 
-        spec_basenames = self.specs_map.get(package_name, [package_name])
+        spec_basenames = self.spec_names_by_package.get(package_name, [package_name])
         for spec in spec_basenames:
             spec_file = f"{spec}.spec"
             if spec_file in repo_files:
@@ -190,7 +190,7 @@ class PackagesInGiteaReport:
     def run(self) -> Tuple[Optional[str], Optional[List[SourcePackage]]]:
         logging.info(f"Processing Gitea project: {self.config.get('name')}")
         all_packages: List[SourcePackage] = []
-        for package_name in self.rpm_map.keys():
+        for package_name in self.binary_patterns_by_source.keys():
             pkgs = self._fetch_package_data(package_name)
             if pkgs:
                 all_packages.extend(pkgs)

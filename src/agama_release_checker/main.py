@@ -103,7 +103,7 @@ def main() -> None:
     gitea_pr_results: List[Tuple[Dict[str, Any], List[GiteaPullRequest]]] = []
     obs_requests_results: List[Tuple[Dict[str, Any], List[ObsRequest]]] = []
     all_git_hashes: Dict[str, Set[str]] = {}
-    rpm_map: Dict[str, List[str]] = config.rpms
+    binary_patterns_by_source: Dict[str, List[str]] = config.binary_patterns_by_source
 
     stages_to_process = [
         s
@@ -138,7 +138,7 @@ def main() -> None:
                 )
             )
             if iso_packages:
-                new_hashes = extract_git_hashes(iso_packages, rpm_map)
+                new_hashes = extract_git_hashes(iso_packages, binary_patterns_by_source)
                 for repo, hashes in new_hashes.items():
                     if repo not in all_git_hashes:
                         all_git_hashes[repo] = set()
@@ -146,7 +146,10 @@ def main() -> None:
 
         elif stage_type == "obsproject":
             obs_report = PackagesInObsReport(
-                stage, rpm_map, config.specs, no_cache=args.no_command_cache
+                stage,
+                binary_patterns_by_source,
+                config.spec_names_by_package,
+                no_cache=args.no_command_cache,
             )
             latest_url, obs_packages = obs_report.run()
 
@@ -160,7 +163,7 @@ def main() -> None:
                 )
             )
             if obs_packages:
-                new_hashes = extract_git_hashes(obs_packages, rpm_map)
+                new_hashes = extract_git_hashes(obs_packages, binary_patterns_by_source)
                 for repo, hashes in new_hashes.items():
                     if repo not in all_git_hashes:
                         all_git_hashes[repo] = set()
@@ -169,7 +172,7 @@ def main() -> None:
             if stage.get("submit_requests"):
                 requests_report = ObsSubmitRequestsReport(
                     stage,
-                    rpm_map,
+                    binary_patterns_by_source,
                     no_cache=args.no_command_cache,
                     recent_requests=args.recent_rq,
                 )
@@ -187,7 +190,10 @@ def main() -> None:
 
         elif stage_type == "giteaproject":
             gitea_report = PackagesInGiteaReport(
-                stage, rpm_map, config.specs, no_cache=args.no_command_cache
+                stage,
+                binary_patterns_by_source,
+                config.spec_names_by_package,
+                no_cache=args.no_command_cache,
             )
             _, gitea_packages = gitea_report.run()
 
@@ -201,14 +207,16 @@ def main() -> None:
                 )
             )
             if gitea_packages:
-                new_hashes = extract_git_hashes(gitea_packages, rpm_map)
+                new_hashes = extract_git_hashes(
+                    gitea_packages, binary_patterns_by_source
+                )
                 for repo, hashes in new_hashes.items():
                     if repo not in all_git_hashes:
                         all_git_hashes[repo] = set()
                     all_git_hashes[repo].update(hashes)
 
             gitea_pr_report = GiteaPullRequestsReport(
-                stage, rpm_map, no_cache=args.no_command_cache
+                stage, binary_patterns_by_source, no_cache=args.no_command_cache
             )
             _, prs = gitea_pr_report.run()
             if prs:
@@ -226,11 +234,19 @@ def main() -> None:
             pass
 
     if iso_results:
-        print_iso_results(iso_results, rpm_map)
+        print_iso_results(iso_results, binary_patterns_by_source)
     if obs_results:
-        print_obs_results(obs_results, list(rpm_map.keys()), config.specs)
+        print_obs_results(
+            obs_results,
+            list(binary_patterns_by_source.keys()),
+            config.spec_names_by_package,
+        )
     if gitea_results:
-        print_gitea_results(gitea_results, list(rpm_map.keys()), config.specs)
+        print_gitea_results(
+            gitea_results,
+            list(binary_patterns_by_source.keys()),
+            config.spec_names_by_package,
+        )
     if gitea_pr_results:
         print_gitea_pull_requests_results(gitea_pr_results)
     if obs_requests_results:

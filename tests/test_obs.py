@@ -74,14 +74,16 @@ def test_packages_in_obs_report(mock_run_cached):
         "name": "obs-sm-A-Devel",
     }
 
-    rpm_map = {
+    binary_patterns_by_source = {
         "agama": ["agama"],
         "rubygem-agama-yast": ["rubygem-agama-yast", "agama-yast"],
     }
 
-    specs_map = {"rubygem-agama-yast": ["rubygem-agama-yast", "agama-yast"]}
+    spec_names_by_package = {"rubygem-agama-yast": ["rubygem-agama-yast", "agama-yast"]}
 
-    report = PackagesInObsReport(config, rpm_map, specs_map)
+    report = PackagesInObsReport(
+        config, binary_patterns_by_source, spec_names_by_package
+    )
     latest_url, packages = report.run()
 
     assert latest_url is None
