@@ -1,0 +1,211 @@
+Previous conversation
+---------------------
+
+❯ @CLEANUP.md , then run " rg --sort path -g \*py -w 'def|class' " or       
+  another way to get an overview of current naming. Propose improvements to 
+   code structure and naming.                                               
+
+(thinking steps deleted)
+
+● Now I have a comprehensive picture. Here's my analysis and proposals:
+
+  ---
+  Code Structure & Naming Review
+
+  1. Naming inconsistencies with CLEANUP.md concepts
+
+  Problem: "stage" conflates repository types with the pipeline concept
+
+  The config uses stages as a flat list mixing different repository types (git,
+  mirrorcache, obsproject, giteaproject). But per CLEANUP.md, these are
+  repositories, not stages. A "stage" in the release pipeline would be a
+  position in the progression (e.g. upstream → devel → release), not a
+  repository type.
+
+  - StageConfig → should be RepositoryConfig
+  - MirrorcacheConfig → MirrorcacheRepoConfig or just keep as-is since the type
+  suffix is clear
+  - Config key stages: → repositories:
+
+  Problem: Type names mix levels of abstraction
+
+  ┌────────────────┬─────────────────────────────────┬────────────────────┐
+  │  Config type   │             Meaning             │    Better name     │
+  ├────────────────┼─────────────────────────────────┼────────────────────┤
+  │ "git"          │ upstream source repo            │ "upstream_git"     │
+  ├────────────────┼─────────────────────────────────┼────────────────────┤
+  │ "obsproject"   │ OBS project (source packages)   │ "obs"              │
+  ├────────────────┼─────────────────────────────────┼────────────────────┤
+  │ "giteaproject" │ Gitea project (source packages) │ "gitea"            │
+  ├────────────────┼─────────────────────────────────┼────────────────────┤
+  │ "mirrorcache"  │ ISO download directory          │ "mirrorcache" (ok) │
+  └────────────────┴─────────────────────────────────┴────────────────────┘
+
+  "obsproject" and "giteaproject" have the redundant "project" suffix. Just
+  "obs" and "gitea" would suffice.
+
+  2. Report classes: inconsistent naming pattern
+
+  ┌─────────────────────────┬──────────────────────────────────────────────┐
+  │          Class          │                 What it does                 │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ RpmsOnIsoReport         │ "RPMs on ISO" — describes content            │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ PackagesInObsReport     │ "Packages in OBS" — describes content        │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ PackagesInGiteaReport   │ "Packages in Gitea" — describes content      │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ ObsSubmitRequestsReport │ "OBS Submit Requests" — describes transition │
+  ├─────────────────────────┼──────────────────────────────────────────────┤
+  │ GiteaPullRequestsReport │ "Gitea Pull Requests" — describes transition │
+  └─────────────────────────┴──────────────────────────────────────────────┘
+
+  Proposal: use a uniform {Source}{DataType}Report pattern:
+
+  ┌─────────────────────────┬────────────────────────────────────────┐
+  │         Current         │                Proposed                │
+  ├─────────────────────────┼────────────────────────────────────────┤
+  │ RpmsOnIsoReport         │ IsoPackagesReport                      │
+  ├─────────────────────────┼────────────────────────────────────────┤
+  │ PackagesInObsReport     │ ObsPackagesReport                      │
+  ├─────────────────────────┼────────────────────────────────────────┤
+  │ PackagesInGiteaReport   │ GiteaPackagesReport                    │
+  ├─────────────────────────┼────────────────────────────────────────┤
+  │ ObsSubmitRequestsReport │ ObsRequestsReport                      │
+  ├─────────────────────────┼────────────────────────────────────────┤
+  │ GiteaPullRequestsReport │ GiteaPullRequestsReport (already fits) │
+  └─────────────────────────┴────────────────────────────────────────┘
+
+  3. Report constructors: Dict[str, Any] vs typed config
+
+  PackagesInObsReport and PackagesInGiteaReport take config: Dict[str, Any]
+  instead of their corresponding typed dataclass (StageConfig subclass). This
+  defeats the purpose of having models.py. Meanwhile RpmsOnIsoReport correctly
+  takes MirrorcacheConfig.
+
+  Proposal: All report classes should accept their typed config dataclass, and
+  the deserialization should happen once in main.py.
+
+  4. main.py: the giant loop accumulates Dict[str, Any] tuples
+
+  Lines 91-98 define result lists with types like:
+  List[Tuple[Dict[str, Any], Optional[str], Optional[List[Package]]]]
+
+  These anonymous tuples with dicts are hard to read. Each should be a small
+  @dataclass or at minimum a NamedTuple.
+
+  5. reporting.py is a grab-bag
+
+  It mixes:
+  - Data extraction (extract_git_hashes) — belongs with data processing
+  - Generic table rendering (print_markdown_table) — rendering utility
+  - Per-source-type report formatting (print_iso_results, print_obs_results,
+  ...) — each could live alongside its report class
+
+  Proposal: Move print functions into each report class as a format() or
+  render() method, or at minimum split into:
+  - reporting/table.py — generic markdown table
+  - reporting/formatters.py — per-type formatters
+
+  6. File naming: iso.py vs reports/iso_report.py
+
+  iso.py at the top level contains ISO-specific utilities (mount, unmount, parse
+   metadata). These are really helpers for reports/iso_report.py. Either:
+  - Move them into reports/iso_report.py as private methods, or
+  - Rename to iso_utils.py to clarify they're helpers, not the report itself
+
+  7. Package model is overloaded
+
+  Package(name, version, release, arch) represents both:
+  - A binary RPM from an ISO (with arch like x86_64)
+  - A source package from OBS/Gitea (with arch="src" as a convention)
+
+  Per CLEANUP.md these are distinct concepts. Consider either:
+  - Subclasses BinaryPackage / SourcePackage, or
+  - At minimum a kind field to distinguish them
+
+  8. rpm_map / specs_map naming
+
+  rpm_map: Dict[str, List[str]] maps source RPM name → binary RPM glob patterns.
+   The name rpm_map is vague. Better: source_to_binary_map or
+  binary_patterns_by_source.
+
+  Similarly specs_map maps OBS package name → spec file basenames. Better:
+  spec_names_by_package.
+
+  Summary of priorities
+
+  ┌──────────┬──────────────────────────────────────────────────────┬────────┐
+  │ Priority │                        Change                        │ Effort │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ High     │ Type the report constructors (Dict→dataclass)        │ Medium │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ High     │ Rename stages → repositories in config + code        │ Medium │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ High     │ Normalize report class names (IsoPackagesReport,     │ Low    │
+  │          │ etc.)                                                │        │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ Medium   │ Replace anonymous tuples in main.py with dataclasses │ Low    │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ Medium   │ Clarify rpm_map / specs_map naming                   │ Low    │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ Medium   │ Split reporting.py or fold formatters into report    │ Medium │
+  │          │ classes                                              │        │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ Low      │ Distinguish binary vs source Package                 │ Low    │
+  ├──────────┼──────────────────────────────────────────────────────┼────────┤
+  │ Low      │ Simplify config type strings (obsproject → obs)      │ Low    │
+  └──────────┴──────────────────────────────────────────────────────┴────────┘
+
+  Would you like me to implement any of these changes?
+
+✻ Worked for 54s
+
+User review of the above plan
+-----------------------------
+
+### 1. Naming inconsistencies
+
+Apply this
+
+#### Gitea name
+
+In the classes with Gitea in their name, add a note:
+
+> Gitea is a general git technology but in openSUSE context we use it with the
+specific meaning "VCS storing source tarball blobs for OBS"
+
+### 2. Report classes
+
+Apply this, but also rename GiteaPullRequestsReport to GiteaRequestsReport.
+
+### 3. Report constructors
+
+Apply this
+
+### 4. tuples in main loop
+
+Leave this towards the end, unless needed by other steps.
+Before implementing this one, show me alternatives with dataclasses and named tuples.
+
+### 5. reporting
+
+Move print functions into each report class as a render() method.
+
+### 6. iso.py
+
+Rename to iso_utils.py
+
+### 7. Package model
+
+Split to BinaryPackage, SourcePackage.
+
+### 8. rpm_map / specs_map naming
+
+Rename them to binary_patterns_by_source,
+spec_names_by_package
+
+Implementation plan
+-------------------
+
+Now make a plan to implement the above.
