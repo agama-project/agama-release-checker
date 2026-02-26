@@ -6,7 +6,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
 from .models import BinaryPackage
 
 
@@ -54,7 +53,7 @@ def unmount_iso(mount_point: Path) -> bool:
 
 def get_packages_from_metadata_file(
     packages_json_maybe_gz: Path,
-) -> List[BinaryPackage]:
+) -> list[BinaryPackage]:
     """
     Parses a .packages.json.gz or .packages.json file to get a list of all packages.
     """
@@ -92,7 +91,7 @@ def get_packages_from_metadata_file(
     return []  # Should not reach here if file exists and is valid JSON/GZIP-JSON
 
 
-def get_packages_from_metadata(mount_point: Path) -> List[BinaryPackage]:
+def get_packages_from_metadata(mount_point: Path) -> list[BinaryPackage]:
     """
     Parses LiveOS/.packages.json.gz or LiveOS/.packages.json to get a list of all packages.
     """

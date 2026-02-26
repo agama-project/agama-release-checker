@@ -1,7 +1,6 @@
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional, Tuple
 
 from .utils import CACHE_DIR, ensure_dir
 
@@ -54,7 +53,7 @@ class GitManager:
             except subprocess.CalledProcessError as e:
                 logging.error(f"Failed to clone git repo: {e.stderr}")
 
-    def get_commit_info(self, commit_hash: str) -> Tuple[Optional[str], Optional[str]]:
+    def get_commit_info(self, commit_hash: str) -> tuple[str | None, str | None]:
         """Returns (timestamp, description) for a commit hash."""
         if not self.repo_path.exists():
             return None, None

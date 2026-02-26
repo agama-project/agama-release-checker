@@ -3,7 +3,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 from urllib.parse import urljoin
 
 import requests  # type: ignore
@@ -13,7 +12,7 @@ import fnmatch
 from .utils import ensure_dir
 
 
-def cached_get(url: str, cache_file: Optional[Path] = None) -> Optional[str]:
+def cached_get(url: str, cache_file: Path | None = None) -> str | None:
     """
     Fetches the content of a URL, using a cache file if available and fresh.
     """
@@ -48,8 +47,8 @@ def cached_get(url: str, cache_file: Optional[Path] = None) -> Optional[str]:
 
 
 def find_iso_urls(
-    base_url: str, patterns: List[str], cache_file: Optional[Path] = None
-) -> List[str]:
+    base_url: str, patterns: list[str], cache_file: Path | None = None
+) -> list[str]:
     """Scrapes the given URL and returns a list of matching ISO URLs."""
     logging.info(f"Fetching ISO directory from: {base_url}")
     logging.debug(f"Scraping with patterns: {patterns}")

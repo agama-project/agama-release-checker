@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import fnmatch
 from pathlib import Path
@@ -43,7 +43,7 @@ class IsoPackagesReport:
             except OSError as e:
                 logging.warning(f"Failed to remove old ISO {f.name}: {e}")
 
-    def run(self) -> Tuple[Optional[str], Optional[List[BinaryPackage]]]:
+    def run(self) -> tuple[str | None, list[BinaryPackage] | None]:
         """Processes a single mirrorcache configuration."""
         logging.info(f"Processing mirrorcache: {self.config.name}")
         base_url = self.config.url
@@ -97,12 +97,12 @@ class IsoPackagesReport:
 
     def _print_packages_table(
         self,
-        binary_patterns_by_source: Dict[str, List[str]],
+        binary_patterns_by_source: dict[str, list[str]],
         packages: Sequence[BinaryPackage],
     ) -> None:
         """Prints a formatted table of binary packages grouped by source."""
         pkg_map = {pkg.name: pkg for pkg in packages}
-        all_found: Dict[str, List[BinaryPackage]] = {}
+        all_found: dict[str, list[BinaryPackage]] = {}
 
         for source_rpm, binary_patterns in binary_patterns_by_source.items():
             found = []
@@ -118,7 +118,7 @@ class IsoPackagesReport:
             return
 
         headers = ["Source Name", "Name", "Version", "Release"]
-        rows: List[List[str]] = []
+        rows: list[list[str]] = []
         for source_rpm, found in sorted(all_found.items()):
             rows.append([source_rpm, "", "", ""])
             for pkg in found:
@@ -127,9 +127,9 @@ class IsoPackagesReport:
 
     def render(
         self,
-        latest_iso_url: Optional[str],
-        packages: Optional[List[BinaryPackage]],
-        binary_patterns_by_source: Dict[str, List[str]],
+        latest_iso_url: str | None,
+        packages: list[BinaryPackage] | None,
+        binary_patterns_by_source: dict[str, list[str]],
     ) -> None:
         """Renders the ISO packages report as markdown."""
         print(f"\n## ISO: {self.config.name}\n")

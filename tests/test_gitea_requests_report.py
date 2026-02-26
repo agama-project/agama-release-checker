@@ -1,6 +1,5 @@
 import json
 from unittest.mock import MagicMock, patch
-from typing import List, Dict, Any
 
 from agama_release_checker.reports.gitea_requests_report import GiteaRequestsReport
 from agama_release_checker.models import GiteaConfig, GiteaPullRequest

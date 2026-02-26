@@ -3,7 +3,6 @@ import logging
 import sys
 import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple, Set
 
 from .config import load_config
 from .iso_utils import check_command
@@ -92,15 +91,15 @@ def main() -> None:
     ensure_dir(CACHE_DIR)
     config: AppConfig = load_config(Path("config.yml"))
 
-    iso_results: List[
-        Tuple[IsoPackagesReport, Optional[str], Optional[List[BinaryPackage]]]
+    iso_results: list[
+        tuple[IsoPackagesReport, str | None, list[BinaryPackage] | None]
     ] = []
-    obs_results: List[Tuple[ObsPackagesReport, Optional[List[SourcePackage]]]] = []
-    gitea_results: List[Tuple[GiteaPackagesReport, Optional[List[SourcePackage]]]] = []
-    gitea_pr_results: List[Tuple[GiteaRequestsReport, List[GiteaPullRequest]]] = []
-    obs_requests_results: List[Tuple[ObsRequestsReport, List[ObsRequest]]] = []
-    all_git_hashes: Dict[str, Set[str]] = {}
-    binary_patterns_by_source: Dict[str, List[str]] = config.binary_patterns_by_source
+    obs_results: list[tuple[ObsPackagesReport, list[SourcePackage] | None]] = []
+    gitea_results: list[tuple[GiteaPackagesReport, list[SourcePackage] | None]] = []
+    gitea_pr_results: list[tuple[GiteaRequestsReport, list[GiteaPullRequest]]] = []
+    obs_requests_results: list[tuple[ObsRequestsReport, list[ObsRequest]]] = []
+    all_git_hashes: dict[str, set[str]] = {}
+    binary_patterns_by_source: dict[str, list[str]] = config.binary_patterns_by_source
 
     repos_to_process = [
         r

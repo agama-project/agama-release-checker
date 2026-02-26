@@ -1,7 +1,4 @@
-from typing import Optional, Tuple
-
-
-def parse_obsinfo(content: str) -> Optional[str]:
+def parse_obsinfo(content: str) -> str | None:
     """Parses simple key: value format from .obsinfo file."""
     for line in content.splitlines():
         if ":" in line:
@@ -13,7 +10,7 @@ def parse_obsinfo(content: str) -> Optional[str]:
     return None
 
 
-def parse_spec(content: str) -> Tuple[str, str]:
+def parse_spec(content: str) -> tuple[str, str]:
     """Parses version and release from a .spec file."""
     version = ""
     release = ""

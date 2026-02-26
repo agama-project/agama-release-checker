@@ -3,7 +3,6 @@ import re
 import subprocess
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from .utils import ensure_dir
 
@@ -13,7 +12,7 @@ def _sanitize_filename(s: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_\-.]", "_", s)
 
 
-def _generate_cache_filename(cmd: List[str]) -> str:
+def _generate_cache_filename(cmd: list[str]) -> str:
     """Generates a readable cache filename from the command arguments."""
     # Skip 'osc' prefix if present for cleaner names, or keep it?
     # Keeping it is safer for uniqueness if we ever run other commands.
@@ -22,11 +21,11 @@ def _generate_cache_filename(cmd: List[str]) -> str:
 
 
 def run_cached_command(
-    cmd: List[str],
-    cache_dir: Optional[Path] = None,
+    cmd: list[str],
+    cache_dir: Path | None = None,
     max_age: int = 3600,
     force_refresh: bool = False,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """
     Runs a shell command with caching.
 

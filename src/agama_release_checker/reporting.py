@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Dict, Sequence, Set, Union
+from collections.abc import Sequence
 from urllib.parse import urljoin
 import fnmatch
 
@@ -10,15 +10,15 @@ from .models import (
     SourcePackage,
 )
 
-Package = Union[BinaryPackage, SourcePackage]
+Package = BinaryPackage | SourcePackage
 from .git_manager import GitManager
 
 
 def extract_git_hashes(
-    packages: Sequence[Package], binary_patterns_by_source: Dict[str, List[str]]
-) -> Dict[str, Set[str]]:
+    packages: Sequence[Package], binary_patterns_by_source: dict[str, list[str]]
+) -> dict[str, set[str]]:
     """Extracts git hashes from the version strings of packages, grouped by source rpm."""
-    git_hashes: Dict[str, Set[str]] = {}
+    git_hashes: dict[str, set[str]] = {}
     pkg_map = {pkg.name: pkg for pkg in packages}
     for source_rpm, binary_patterns in binary_patterns_by_source.items():
         for pattern in binary_patterns:
@@ -33,7 +33,7 @@ def extract_git_hashes(
     return git_hashes
 
 
-def print_markdown_table(headers: List[str], rows: List[List[str]]) -> None:
+def print_markdown_table(headers: list[str], rows: list[list[str]]) -> None:
     """Prints a generic markdown table."""
     if not headers:
         return
@@ -66,8 +66,8 @@ def print_markdown_table(headers: List[str], rows: List[List[str]]) -> None:
 
 
 def print_git_report(
-    git_hashes: Dict[str, Set[str]],
-    git_configs: List[GitConfig],
+    git_hashes: dict[str, set[str]],
+    git_configs: list[GitConfig],
 ) -> None:
     """Prints the git commit report."""
     if not git_hashes:
@@ -84,7 +84,7 @@ def print_git_report(
     config_map = {cfg.name: cfg for cfg in git_configs}
 
     # Organize hashes by repo name, applying fallback logic
-    hashes_by_repo: Dict[str, Set[str]] = {}
+    hashes_by_repo: dict[str, set[str]] = {}
 
     for source_rpm, hashes in git_hashes.items():
         repo_name = source_rpm

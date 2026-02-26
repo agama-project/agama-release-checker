@@ -1,6 +1,6 @@
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Set
 from urllib.parse import urlparse
 
 from agama_release_checker.models import ObsConfig, SourcePackage
@@ -14,8 +14,8 @@ class ObsPackagesReport:
     def __init__(
         self,
         config: ObsConfig,
-        binary_patterns_by_source: Dict[str, List[str]],
-        spec_names_by_package: Optional[Dict[str, List[str]]] = None,
+        binary_patterns_by_source: dict[str, list[str]],
+        spec_names_by_package: dict[str, list[str]] | None = None,
         no_cache: bool = False,
     ):
         self.config = config
@@ -30,7 +30,7 @@ class ObsPackagesReport:
         parts = path.split("/")
         return parts[-1]
 
-    def _run_osc_command(self, cmd: List[str]) -> Tuple[bool, str]:
+    def _run_osc_command(self, cmd: list[str]) -> tuple[bool, str]:
         """Runs an osc command and returns success status and output, with caching."""
 
         # Don't cache 'osc version'
@@ -44,13 +44,13 @@ class ObsPackagesReport:
         # run_cached_command will handle directory creation and caching
         return run_cached_command(cmd, cache_dir=cache_dir, force_refresh=self.no_cache)
 
-    def _get_project_packages(self, project: str) -> Set[str]:
+    def _get_project_packages(self, project: str) -> set[str]:
         success, output = self._run_osc_command(["osc", "ls", project])
         if success:
             return set(output.splitlines())
         return set()
 
-    def _get_package_files(self, project: str, package: str) -> List[str]:
+    def _get_package_files(self, project: str, package: str) -> list[str]:
         success, output = self._run_osc_command(["osc", "ls", project, package])
         if success:
             return output.splitlines()
@@ -64,7 +64,7 @@ class ObsPackagesReport:
             return output
         return ""
 
-    def run(self) -> Tuple[Optional[str], Optional[List[SourcePackage]]]:
+    def run(self) -> tuple[str | None, list[SourcePackage] | None]:
         project = self._get_project_name()
         if not project:
             logging.error(
@@ -85,7 +85,7 @@ class ObsPackagesReport:
             )
             return None, None
 
-        packages: List[SourcePackage] = []
+        packages: list[SourcePackage] = []
 
         for package_name in self.binary_patterns_by_source.keys():
             if package_name not in project_packages:
@@ -152,7 +152,7 @@ class ObsPackagesReport:
     def _print_source_packages_table(self, packages: Sequence[SourcePackage]) -> None:
         """Prints a formatted table of source packages grouped by OBS package."""
         pkg_map = {pkg.name: pkg for pkg in packages}
-        all_found: Dict[str, List[SourcePackage]] = {}
+        all_found: dict[str, list[SourcePackage]] = {}
 
         for obs_package in self.binary_patterns_by_source.keys():
             found = []
@@ -168,14 +168,14 @@ class ObsPackagesReport:
             return
 
         headers = ["Source Name", "Name", "Version", "Release"]
-        rows: List[List[str]] = []
+        rows: list[list[str]] = []
         for source_rpm, found in sorted(all_found.items()):
             rows.append([source_rpm, "", "", ""])
             for pkg in found:
                 rows.append(["", pkg.name, pkg.version, pkg.release])
         print_markdown_table(headers, rows)
 
-    def render(self, packages: Optional[List[SourcePackage]]) -> None:
+    def render(self, packages: list[SourcePackage] | None) -> None:
         """Renders the OBS packages report as markdown."""
         print(f"\n## OBS: {self.config.name}\n")
         print(f"Project: {self.config.url}\n")

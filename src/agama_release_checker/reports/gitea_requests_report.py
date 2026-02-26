@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from agama_release_checker.models import GiteaConfig, GiteaPullRequest
@@ -19,7 +18,7 @@ class GiteaRequestsReport:
     def __init__(
         self,
         config: GiteaConfig,
-        binary_patterns_by_source: Dict[str, List[str]],
+        binary_patterns_by_source: dict[str, list[str]],
         no_cache: bool = False,
     ):
         self.config = config
@@ -37,7 +36,7 @@ class GiteaRequestsReport:
         parsed = urlparse(self.config.url)
         return parsed.netloc
 
-    def _fetch_prs(self, package_name: str) -> List[GiteaPullRequest]:
+    def _fetch_prs(self, package_name: str) -> list[GiteaPullRequest]:
         repo = self._get_repo_path(package_name)
         login = self._get_login()
         branch = self.config.branch
@@ -93,15 +92,15 @@ class GiteaRequestsReport:
             logging.error(f"Failed to decode tea output for {repo}: {e}")
             return []
 
-    def run(self) -> Tuple[None, List[GiteaPullRequest]]:
+    def run(self) -> tuple[None, list[GiteaPullRequest]]:
         logging.info(f"Processing Gitea pull requests for: {self.config.name}")
-        all_prs: List[GiteaPullRequest] = []
+        all_prs: list[GiteaPullRequest] = []
         for package_name in self.binary_patterns_by_source.keys():
             prs = self._fetch_prs(package_name)
             all_prs.extend(prs)
         return None, all_prs
 
-    def render(self, prs: List[GiteaPullRequest]) -> None:
+    def render(self, prs: list[GiteaPullRequest]) -> None:
         """Renders the Gitea pull requests report as markdown."""
         print(f"\n## Gitea Pull Requests: {self.config.name}\n")
         print(f"URL: {self.config.url}\n")
@@ -119,7 +118,7 @@ class GiteaRequestsReport:
             "Author",
             "Comments",
         ]
-        rows: List[List[str]] = []
+        rows: list[list[str]] = []
         for pr in prs:
             rows.append(
                 [

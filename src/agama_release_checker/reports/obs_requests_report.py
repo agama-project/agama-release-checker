@@ -1,7 +1,6 @@
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from agama_release_checker.models import ObsConfig, ObsRequest
@@ -14,7 +13,7 @@ class ObsRequestsReport:
     def __init__(
         self,
         config: ObsConfig,
-        binary_patterns_by_source: Dict[str, List[str]],
+        binary_patterns_by_source: dict[str, list[str]],
         no_cache: bool = False,
         recent_requests: bool = False,
     ):
@@ -30,7 +29,7 @@ class ObsRequestsReport:
         parts = path.split("/")
         return parts[-1]
 
-    def _run_osc_command(self, cmd: List[str]) -> Tuple[bool, str]:
+    def _run_osc_command(self, cmd: list[str]) -> tuple[bool, str]:
         """Runs an osc command and returns success status and output, with caching."""
 
         # Don't cache 'osc version'
@@ -44,7 +43,7 @@ class ObsRequestsReport:
         # run_cached_command will handle directory creation and caching
         return run_cached_command(cmd, cache_dir=cache_dir, force_refresh=self.no_cache)
 
-    def run(self) -> Tuple[Optional[str], Optional[List[ObsRequest]]]:
+    def run(self) -> tuple[str | None, list[ObsRequest] | None]:
         project = self._get_project_name()
         if not project:
             logging.error(
@@ -58,7 +57,7 @@ class ObsRequestsReport:
         if not self._run_osc_command(["osc", "version"])[0]:
             return None, None
 
-        requests: List[ObsRequest] = []
+        requests: list[ObsRequest] = []
 
         # Iterate over all defined source packages
         for package_name in self.binary_patterns_by_source.keys():
@@ -153,7 +152,7 @@ class ObsRequestsReport:
 
         return None, requests
 
-    def render(self, requests: List[ObsRequest]) -> None:
+    def render(self, requests: list[ObsRequest]) -> None:
         """Renders the OBS submit requests report as markdown."""
         print(f"\n## OBS Submit Requests: {self.config.name}\n")
         print(f"Project: {self.config.url}\n")
@@ -163,7 +162,7 @@ class ObsRequestsReport:
             return
 
         headers = ["Updated", "Created", "ID", "State", "Source", "Target"]
-        rows: List[List[str]] = []
+        rows: list[list[str]] = []
         for req in requests:
             source = f"{req.source_project}/{req.source_package}"
             target = f"{req.target_project}/{req.target_package}"

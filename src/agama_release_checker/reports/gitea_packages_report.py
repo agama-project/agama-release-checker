@@ -1,7 +1,7 @@
 import logging
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
 from urllib.parse import urlparse
 
 from agama_release_checker.models import GiteaConfig, SourcePackage
@@ -20,8 +20,8 @@ class GiteaPackagesReport:
     def __init__(
         self,
         config: GiteaConfig,
-        binary_patterns_by_source: Dict[str, List[str]],
-        spec_names_by_package: Optional[Dict[str, List[str]]] = None,
+        binary_patterns_by_source: dict[str, list[str]],
+        spec_names_by_package: dict[str, list[str]] | None = None,
         no_cache: bool = False,
     ):
         self.config = config
@@ -39,8 +39,8 @@ class GiteaPackagesReport:
         return f"gitea@{parsed.netloc}:{path}.git"
 
     def _run_git_command(
-        self, cmd: List[str], cwd: Optional[Path] = None
-    ) -> Tuple[bool, str]:
+        self, cmd: list[str], cwd: Path | None = None
+    ) -> tuple[bool, str]:
         display_cwd = str(cwd).replace(str(CACHE_DIR), "$CACHE_DIR") if cwd else "."
         logging.debug(f"Executing git command: {' '.join(cmd)} in {display_cwd}")
         try:
@@ -57,7 +57,7 @@ class GiteaPackagesReport:
             logging.error(f"Git command failed: {' '.join(cmd)}\n{e.stderr}")
             return False, e.stderr
 
-    def _fetch_package_data(self, package_name: str) -> Optional[List[SourcePackage]]:
+    def _fetch_package_data(self, package_name: str) -> list[SourcePackage] | None:
         remote_url = self._get_remote_url(package_name)
         config_name = self.config.name
         branch = self.config.branch
@@ -167,7 +167,7 @@ class GiteaPackagesReport:
                 content = obsinfo_path.read_text()
                 shared_version = parse_obsinfo(content) or ""
 
-        packages: List[SourcePackage] = []
+        packages: list[SourcePackage] = []
         for spec_basename in spec_basenames:
             version = shared_version
             release = "0"
@@ -194,9 +194,9 @@ class GiteaPackagesReport:
                 )
         return packages
 
-    def run(self) -> Tuple[Optional[str], Optional[List[SourcePackage]]]:
+    def run(self) -> tuple[str | None, list[SourcePackage] | None]:
         logging.info(f"Processing Gitea project: {self.config.name}")
-        all_packages: List[SourcePackage] = []
+        all_packages: list[SourcePackage] = []
         for package_name in self.binary_patterns_by_source.keys():
             pkgs = self._fetch_package_data(package_name)
             if pkgs:
@@ -207,7 +207,7 @@ class GiteaPackagesReport:
     def _print_source_packages_table(self, packages: Sequence[SourcePackage]) -> None:
         """Prints a formatted table of source packages grouped by Gitea package."""
         pkg_map = {pkg.name: pkg for pkg in packages}
-        all_found: Dict[str, List[SourcePackage]] = {}
+        all_found: dict[str, list[SourcePackage]] = {}
 
         for obs_package in self.binary_patterns_by_source.keys():
             found = []
@@ -223,14 +223,14 @@ class GiteaPackagesReport:
             return
 
         headers = ["Source Name", "Name", "Version", "Release"]
-        rows: List[List[str]] = []
+        rows: list[list[str]] = []
         for source_rpm, found in sorted(all_found.items()):
             rows.append([source_rpm, "", "", ""])
             for pkg in found:
                 rows.append(["", pkg.name, pkg.version, pkg.release])
         print_markdown_table(headers, rows)
 
-    def render(self, packages: Optional[List[SourcePackage]]) -> None:
+    def render(self, packages: list[SourcePackage] | None) -> None:
         """Renders the Gitea packages report as markdown."""
         print(f"\n## Gitea: {self.config.name}\n")
         print(f"URL: {self.config.url}\n")
