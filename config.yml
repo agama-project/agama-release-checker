@@ -41,11 +41,13 @@ repositories:
 
 - url: https://src.suse.de/pool/
   type: gitea
+  internal: true
   branch: slfo-main
   name: ibs-pool
 
 - url: https://src.suse.de/pool/
   type: gitea
+  internal: true
   branch: slfo-1.2
   name: ibs-pool-slfo1.2
 
