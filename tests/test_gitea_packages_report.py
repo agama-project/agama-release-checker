@@ -44,7 +44,6 @@ def test_packages_in_gitea_report(
     ]
 
     config = GiteaConfig(
-        type="gitea",
         url="https://src.suse.de/pool/",
         name="ibs-pool",
     )
@@ -75,7 +74,6 @@ def test_packages_in_gitea_report(
 
 def test_get_remote_url():
     config = GiteaConfig(
-        type="gitea",
         url="https://src.suse.de/pool/",
         name="ibs-pool",
     )
@@ -104,7 +102,6 @@ def test_gitea_clone_with_branch(mock_ensure_dir, mock_exists, mock_run_git):
     ]
 
     config = GiteaConfig(
-        type="gitea",
         url="https://src.suse.de/pool/",
         name="ibs-pool",
         branch="mybranch",
@@ -153,7 +150,6 @@ def test_gitea_update_with_branch(mock_exists, mock_run_git):
     ]
 
     config = GiteaConfig(
-        type="gitea",
         url="https://src.suse.de/pool/",
         name="ibs-pool",
         branch="mybranch",

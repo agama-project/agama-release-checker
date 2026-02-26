@@ -26,7 +26,6 @@ def test_gitea_pull_requests_report(mock_run):
     mock_run.return_value = (True, json.dumps(tea_output))
 
     config = GiteaConfig(
-        type="gitea",
         url="https://src.suse.de/pool/",
         name="ibs-pool-slfo1.2",
         branch="slfo-1.2",
@@ -75,7 +74,6 @@ def test_gitea_pull_requests_report_branch_filtering(mock_run):
     mock_run.return_value = (True, json.dumps(tea_output))
 
     config = GiteaConfig(
-        type="gitea",
         url="https://src.suse.de/pool/",
         name="ibs-pool-slfo1.2",
         branch="slfo-1.2",

@@ -50,7 +50,7 @@ class IsoPackagesReport:
         patterns = self.config.files
 
         # Directory structure: CACHE_DIR/repo_type/repo_name/
-        repo_dir = CACHE_DIR / self.config.type / self.config.name
+        repo_dir = CACHE_DIR / "mirrorcache" / self.config.name
         ensure_dir(repo_dir)
 
         iso_urls = find_iso_urls(base_url, patterns, cache_file=repo_dir / "index.html")

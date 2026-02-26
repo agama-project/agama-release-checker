@@ -58,9 +58,23 @@ class GiteaPullRequest:
 class RepositoryConfig:
     """Base configuration for a repository entry in config.yml."""
 
-    type: str
     name: str
     url: str
+    internal: bool = False
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "RepositoryConfig":
+        """Deserialize a raw YAML dict into the appropriate subclass.
+
+        The 'type' key selects the subclass; unknown keys are ignored.
+        """
+        d = dict(d)
+        type_name = str(d.pop("type", ""))
+        subcls = _CONFIG_CLASSES.get(type_name)
+        if subcls is None:
+            raise ValueError(f"Unknown repository type: {type_name!r}")
+        known = {f.name for f in subcls.__dataclass_fields__.values()}
+        return subcls(**{k: v for k, v in d.items() if k in known})
 
 
 @dataclass
@@ -95,28 +109,34 @@ class GiteaConfig(RepositoryConfig):
     branch: str | None = None
 
 
+_CONFIG_CLASSES: dict[str, type[RepositoryConfig]] = {
+    "mirrorcache": MirrorcacheConfig,
+    "git": GitConfig,
+    "obs": ObsConfig,
+    "gitea": GiteaConfig,
+}
+
+
 @dataclass
 class AppConfig:
-    repositories: list[dict[str, Any]]
+    """Top-level application configuration loaded from config.yml."""
+
+    repositories: list[RepositoryConfig]
     binary_patterns_by_source: dict[str, list[str]]
     spec_names_by_package: dict[str, list[str]] = field(default_factory=dict)
 
     @property
     def mirrorcache_configs(self) -> list[MirrorcacheConfig]:
-        return [
-            MirrorcacheConfig(**r)
-            for r in self.repositories
-            if r.get("type") == "mirrorcache"
-        ]
+        return [r for r in self.repositories if isinstance(r, MirrorcacheConfig)]
 
     @property
     def git_configs(self) -> list[GitConfig]:
-        return [GitConfig(**r) for r in self.repositories if r.get("type") == "git"]
+        return [r for r in self.repositories if isinstance(r, GitConfig)]
 
     @property
     def obs_configs(self) -> list[ObsConfig]:
-        return [ObsConfig(**r) for r in self.repositories if r.get("type") == "obs"]
+        return [r for r in self.repositories if isinstance(r, ObsConfig)]
 
     @property
     def gitea_configs(self) -> list[GiteaConfig]:
-        return [GiteaConfig(**r) for r in self.repositories if r.get("type") == "gitea"]
+        return [r for r in self.repositories if isinstance(r, GiteaConfig)]

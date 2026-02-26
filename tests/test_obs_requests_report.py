@@ -32,7 +32,6 @@ def test_obs_submit_requests_report(mock_run_cached):
     mock_run_cached.side_effect = side_effect
 
     config = ObsConfig(
-        type="obs",
         url="https://build.opensuse.org/project/show/openSUSE:Factory",
         name="obs-factory",
         submit_requests=True,
@@ -80,7 +79,6 @@ def test_obs_submit_requests_report_recent(mock_run_cached, mock_datetime):
     mock_run_cached.side_effect = side_effect
 
     config = ObsConfig(
-        type="obs",
         url="https://build.opensuse.org/project/show/openSUSE:Factory",
         name="obs-factory",
         submit_requests=True,

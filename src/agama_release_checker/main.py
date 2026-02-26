@@ -8,6 +8,7 @@ from .config import load_config
 from .iso_utils import check_command
 from .models import (
     MirrorcacheConfig,
+    GitConfig,
     ObsConfig,
     GiteaConfig,
     AppConfig,
@@ -104,92 +105,88 @@ def main() -> None:
     repos_to_process = [
         r
         for r in config.repositories
-        if (args.internal or not r.get("internal", False))
-        and (not args.repo or r.get("name") in args.repo)
+        if (args.internal or not r.internal) and (not args.repo or r.name in args.repo)
     ]
 
     if not repos_to_process:
         logging.warning("No repositories to process found.")
 
     for repo in repos_to_process:
-        repo_type = repo.get("type")
-        if repo_type == "mirrorcache":
-            mc_args = {
-                k: repo[k] for k in ["type", "name", "url", "files"] if k in repo
-            }
-            mirrorcache_config = MirrorcacheConfig(**mc_args)
+        match repo:
+            case MirrorcacheConfig():
+                iso_report = IsoPackagesReport(repo)
+                latest_iso_url, iso_packages = iso_report.run()
 
-            iso_report = IsoPackagesReport(mirrorcache_config)
-            latest_iso_url, iso_packages = iso_report.run()
+                iso_results.append((iso_report, latest_iso_url, iso_packages))
+                if iso_packages:
+                    new_hashes = extract_git_hashes(
+                        iso_packages, binary_patterns_by_source
+                    )
+                    for name, hashes in new_hashes.items():
+                        if name not in all_git_hashes:
+                            all_git_hashes[name] = set()
+                        all_git_hashes[name].update(hashes)
 
-            iso_results.append((iso_report, latest_iso_url, iso_packages))
-            if iso_packages:
-                new_hashes = extract_git_hashes(iso_packages, binary_patterns_by_source)
-                for name, hashes in new_hashes.items():
-                    if name not in all_git_hashes:
-                        all_git_hashes[name] = set()
-                    all_git_hashes[name].update(hashes)
+            case ObsConfig():
+                obs_report = ObsPackagesReport(
+                    repo,
+                    binary_patterns_by_source,
+                    config.spec_names_by_package,
+                    no_cache=args.no_command_cache,
+                )
+                latest_url, obs_packages = obs_report.run()
 
-        elif repo_type == "obs":
-            obs_config = ObsConfig(**repo)
-            obs_report = ObsPackagesReport(
-                obs_config,
-                binary_patterns_by_source,
-                config.spec_names_by_package,
-                no_cache=args.no_command_cache,
-            )
-            latest_url, obs_packages = obs_report.run()
+                obs_results.append((obs_report, obs_packages))
+                if obs_packages:
+                    new_hashes = extract_git_hashes(
+                        obs_packages, binary_patterns_by_source
+                    )
+                    for name, hashes in new_hashes.items():
+                        if name not in all_git_hashes:
+                            all_git_hashes[name] = set()
+                        all_git_hashes[name].update(hashes)
 
-            obs_results.append((obs_report, obs_packages))
-            if obs_packages:
-                new_hashes = extract_git_hashes(obs_packages, binary_patterns_by_source)
-                for name, hashes in new_hashes.items():
-                    if name not in all_git_hashes:
-                        all_git_hashes[name] = set()
-                    all_git_hashes[name].update(hashes)
+                if repo.submit_requests:
+                    requests_report = ObsRequestsReport(
+                        repo,
+                        binary_patterns_by_source,
+                        no_cache=args.no_command_cache,
+                        recent_requests=args.recent_rq,
+                    )
+                    _, requests = requests_report.run()
+                    if requests:
+                        obs_requests_results.append((requests_report, requests))
 
-            if obs_config.submit_requests:
-                requests_report = ObsRequestsReport(
-                    obs_config,
+            case GiteaConfig():
+                gitea_report = GiteaPackagesReport(
+                    repo,
+                    binary_patterns_by_source,
+                    config.spec_names_by_package,
+                    no_cache=args.no_command_cache,
+                )
+                _, gitea_packages = gitea_report.run()
+
+                gitea_results.append((gitea_report, gitea_packages))
+                if gitea_packages:
+                    new_hashes = extract_git_hashes(
+                        gitea_packages, binary_patterns_by_source
+                    )
+                    for name, hashes in new_hashes.items():
+                        if name not in all_git_hashes:
+                            all_git_hashes[name] = set()
+                        all_git_hashes[name].update(hashes)
+
+                gitea_pr_report = GiteaRequestsReport(
+                    repo,
                     binary_patterns_by_source,
                     no_cache=args.no_command_cache,
-                    recent_requests=args.recent_rq,
                 )
-                _, requests = requests_report.run()
-                if requests:
-                    obs_requests_results.append((requests_report, requests))
+                _, prs = gitea_pr_report.run()
+                if prs:
+                    gitea_pr_results.append((gitea_pr_report, prs))
 
-        elif repo_type == "gitea":
-            gitea_config = GiteaConfig(**repo)
-            gitea_report = GiteaPackagesReport(
-                gitea_config,
-                binary_patterns_by_source,
-                config.spec_names_by_package,
-                no_cache=args.no_command_cache,
-            )
-            _, gitea_packages = gitea_report.run()
-
-            gitea_results.append((gitea_report, gitea_packages))
-            if gitea_packages:
-                new_hashes = extract_git_hashes(
-                    gitea_packages, binary_patterns_by_source
-                )
-                for name, hashes in new_hashes.items():
-                    if name not in all_git_hashes:
-                        all_git_hashes[name] = set()
-                    all_git_hashes[name].update(hashes)
-
-            gitea_pr_report = GiteaRequestsReport(
-                gitea_config,
-                binary_patterns_by_source,
-                no_cache=args.no_command_cache,
-            )
-            _, prs = gitea_pr_report.run()
-            if prs:
-                gitea_pr_results.append((gitea_pr_report, prs))
-
-        elif repo_type == "git":
-            pass
+            case GitConfig():
+                pass
 
     for iso_rpt, latest_iso_url, iso_pkgs in iso_results:
         iso_rpt.render(latest_iso_url, iso_pkgs, binary_patterns_by_source)

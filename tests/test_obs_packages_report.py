@@ -71,7 +71,6 @@ def test_packages_in_obs_report(mock_run_cached):
     mock_run_cached.side_effect = side_effect
 
     config = ObsConfig(
-        type="obs",
         url="https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel",
         name="obs-sm-A-Devel",
     )
@@ -110,9 +109,7 @@ def test_osc_missing(mock_run_cached):
     # Simulate run_cached_command returning failure (e.g. osc not found)
     mock_run_cached.return_value = (False, "")
 
-    config = ObsConfig(
-        type="obs", url="https://build.opensuse.org/project/show/foo", name="foo"
-    )
+    config = ObsConfig(url="https://build.opensuse.org/project/show/foo", name="foo")
     report = ObsPackagesReport(config, {}, {})
     latest_url, packages = report.run()
 
