@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
+from pathlib import Path
+import yaml  # type: ignore
 
 
 @dataclass
@@ -124,6 +126,16 @@ class AppConfig:
     repositories: list[RepositoryConfig]
     binary_patterns_by_source: dict[str, list[str]]
     spec_names_by_package: dict[str, list[str]] = field(default_factory=dict)
+
+    @classmethod
+    def from_file(cls, config_path: Path) -> "AppConfig":
+        """Loads and returns the YAML configuration from the given path."""
+        with open(config_path, "r") as f:
+            data = yaml.safe_load(f)
+        data["repositories"] = [
+            RepositoryConfig.from_dict(r) for r in data["repositories"]
+        ]
+        return cls(**data)
 
     @property
     def mirrorcache_configs(self) -> list[MirrorcacheConfig]:

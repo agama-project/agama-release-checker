@@ -4,7 +4,6 @@ import sys
 import datetime
 from pathlib import Path
 
-from .config import load_config
 from .iso_utils import check_command
 from .models import (
     MirrorcacheConfig,
@@ -90,7 +89,7 @@ def main() -> None:
         sys.exit(1)
 
     ensure_dir(CACHE_DIR)
-    config: AppConfig = load_config(Path("config.yml"))
+    config: AppConfig = AppConfig.from_file(Path("config.yml"))
 
     iso_results: list[
         tuple[IsoPackagesReport, str | None, list[BinaryPackage] | None]
