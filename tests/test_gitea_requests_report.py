@@ -89,3 +89,42 @@ def test_gitea_pull_requests_report_branch_filtering(mock_run):
     assert len(prs) == 1
     assert prs[0].index == "14"
     assert prs[0].title == "PR for 1.2"
+
+
+def test_gitea_requests_report_sorting(capsys):
+    pr1 = GiteaPullRequest(
+        index="1",
+        state="open",
+        author="a1",
+        url="http://u1",
+        title="t1",
+        mergeable=True,
+        base="b1",
+        created_at="2024-01-01T10:00:00Z",
+        updated_at="2024-01-01T10:00:00Z",
+        comments="0",
+    )
+    pr2 = GiteaPullRequest(
+        index="2",
+        state="open",
+        author="a2",
+        url="http://u2",
+        title="t2",
+        mergeable=True,
+        base="b1",
+        created_at="2024-02-01T10:00:00Z",
+        updated_at="2024-02-01T10:00:00Z",
+        comments="0",
+    )
+
+    config = GiteaConfig(url="http://gitea/", name="gitea")
+    report = GiteaRequestsReport(config, {})
+    # render sorts by the first column (Updated) descending
+    report.render([pr1, pr2])
+
+    captured = capsys.readouterr()
+    lines = [line.strip() for line in captured.out.splitlines() if "|" in line]
+    # Header, separator, then rows
+    # Sorting: newest first (2024-02-01)
+    assert "2024-02-01" in lines[2]
+    assert "2024-01-01" in lines[3]

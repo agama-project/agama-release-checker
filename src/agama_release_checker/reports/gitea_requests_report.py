@@ -132,5 +132,5 @@ class GiteaRequestsReport:
                 ]
             )
 
-        rows.sort(key=lambda x: x[0])
+        rows.sort(key=lambda x: x[0], reverse=True)
         print_markdown_table(headers, rows)

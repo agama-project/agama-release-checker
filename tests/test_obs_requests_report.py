@@ -109,3 +109,40 @@ def test_obs_submit_requests_report_recent(mock_run_cached, mock_datetime):
     assert f"state/@when>'{expected_cutoff}'" in query
     # Check that status filtering is NOT present (as "all states" was requested)
     assert "state/@name='new'" not in query
+
+
+def test_obs_requests_report_sorting(capsys):
+    req1 = ObsRequest(
+        id="1",
+        state="new",
+        source_project="sp",
+        source_package="spkg",
+        target_project="tp",
+        target_package="tpkg",
+        created_at="2024-01-01T10:00:00Z",
+        updated_at="2024-01-01T10:00:00Z",
+        description="old",
+    )
+    req2 = ObsRequest(
+        id="2",
+        state="new",
+        source_project="sp",
+        source_package="spkg",
+        target_project="tp",
+        target_package="tpkg",
+        created_at="2024-02-01T10:00:00Z",
+        updated_at="2024-02-01T10:00:00Z",
+        description="new",
+    )
+
+    config = ObsConfig(url="http://obs/", name="obs")
+    report = ObsRequestsReport(config, {})
+    # render sorts by the first column (Updated) descending
+    report.render([req1, req2])
+
+    captured = capsys.readouterr()
+    lines = [line.strip() for line in captured.out.splitlines() if "|" in line]
+    # Header, separator, then rows
+    # Sorting: newest first (2024-02-01)
+    assert "2024-02-01" in lines[2]
+    assert "2024-01-01" in lines[3]

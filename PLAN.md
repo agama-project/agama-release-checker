@@ -25,3 +25,4 @@ Plan first and make a task list, adding it to this file.
 - [x] print_packages_table needs better examples in the docstring.
       Keep the simple one and add one with meaningful link manager and timestamps.
 - [x] Refactor `dict[str, GitTimestamp]` into `GitRevisionTimestamps` dataclass.
+- [x] Ensure all time-sorted tables (OBS requests, Gitea PRs) are presented most recent first.
