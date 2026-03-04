@@ -55,3 +55,14 @@ def test_print_packages_table_multiple_sources(capsys):
     captured = capsys.readouterr()
     assert "| agama       | 1.0     | 1       |" in captured.out
     assert "| web-ui      | 2.0     | 1       |" in captured.out
+
+
+def test_print_packages_table_skip_empty_found(capsys):
+    all_found = {
+        "agama": [],  # Should be skipped
+        "web-ui": [SourcePackage(name="web-ui", version="2.0", release="1")],
+    }
+    print_packages_table(all_found, "TEST")
+    captured = capsys.readouterr()
+    assert "agama" not in captured.out
+    assert "web-ui" in captured.out

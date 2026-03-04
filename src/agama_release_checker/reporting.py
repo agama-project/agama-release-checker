@@ -38,7 +38,10 @@ def extract_git_hashes(
 
 
 def print_markdown_table(headers: list[str], rows: list[list[str]]) -> None:
-    """Prints a generic markdown table."""
+    """Prints a generic markdown table.
+
+    If a row has more columns than headers, the extra columns are ignored.
+    """
     if not headers:
         return
 
@@ -63,7 +66,11 @@ def print_markdown_table(headers: list[str], rows: list[list[str]]) -> None:
     for row in rows:
         row_str = (
             "| "
-            + " | ".join(f"{str(cell):<{widths[i]}}" for i, cell in enumerate(row))
+            + " | ".join(
+                f"{str(cell):<{widths[i]}}"
+                for i, cell in enumerate(row)
+                if i < len(widths)
+            )
             + " |"
         )
         print(row_str)
@@ -154,10 +161,10 @@ def print_packages_table(
         print_packages_table(all_found, "ISO")
 
     Output:
-        | Source Name  | Version   | Release |
-        |--------------|-----------|---------|
-        | agama        | 1.0       | 1       |
-        | agama-web-ui | 1.1.../!\ | 1       |
+        | Source Name  | Version | Release   |
+        |--------------|---------|-----------|
+        | agama        | 1.0     | 1         |
+        | agama-web-ui | 1.1     | 1.../!\   |
     """
     flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
     if not flat:
