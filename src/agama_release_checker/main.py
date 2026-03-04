@@ -93,6 +93,7 @@ def main() -> None:
     except ZoneInfoNotFoundError:
         logging.error(f"Invalid timezone: {args.timezone}")
         sys.exit(1)
+        return
 
     with open(args.output, "w") as f, redirect_stdout(f):
         logging.info(f"Writing the report to {args.output}")
@@ -112,6 +113,7 @@ def main() -> None:
                 logging.info("On openSUSE/SLES, try: sudo zypper install fuseiso")
                 logging.info("On Debian/Ubuntu, try: sudo apt-get install fuseiso")
             sys.exit(1)
+            return
 
         ensure_dir(CACHE_DIR)
         config: AppConfig = AppConfig.from_file(Path("config.yml"))
