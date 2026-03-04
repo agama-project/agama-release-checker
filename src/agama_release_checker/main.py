@@ -95,6 +95,8 @@ def main() -> None:
         sys.exit(1)
 
     with open(args.output, "w") as f, redirect_stdout(f):
+        logging.info(f"Writing the report to {args.output}")
+
         print("# Agama Release Status")
         print()
         now = datetime.datetime.now(tz)
