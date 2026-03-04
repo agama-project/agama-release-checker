@@ -93,7 +93,7 @@ class GitManager:
             description = desc_proc.stdout.strip()
         except subprocess.CalledProcessError as e:
             # git describe fails if no tags are reachable or found
-            if "No names found" in e.stderr:
+            if e.stderr and "No names found" in e.stderr:
                 description = "(no tags)"
             else:
                 pass
