@@ -12,3 +12,8 @@ check-pytest-nocov:
 .PHONY: docs
 docs:
 	PYTHONPATH=src uv run --with pdoc pdoc agama_release_checker -o docs/
+
+.PHONY: docs0
+# simple but informative code overview
+docs0:
+	rg --sort path -g \*py -w 'def|class'
