@@ -9,6 +9,8 @@ from agama_release_checker.iso_utils import (
     mount_iso,
     unmount_iso,
     get_packages_from_metadata,
+    get_metadata_path,
+    get_packages_from_metadata_file,
 )
 from agama_release_checker.models import MirrorcacheConfig, BinaryPackage
 from agama_release_checker.network import find_iso_urls, download_file
@@ -40,8 +42,14 @@ class IsoPackagesReport:
             try:
                 logging.info(f"Removing old ISO: {f.name}")
                 f.unlink()
+                # Also remove cached metadata files if they exist
+                for ext in [".packages.json", ".packages.json.gz"]:
+                    meta_cache = f.with_suffix(ext)
+                    if meta_cache.exists():
+                        logging.info(f"Removing cached metadata: {meta_cache.name}")
+                        meta_cache.unlink()
             except OSError as e:
-                logging.warning(f"Failed to remove old ISO {f.name}: {e}")
+                logging.warning(f"Failed to remove old ISO or metadata {f.name}: {e}")
 
     def run(self) -> tuple[str | None, list[BinaryPackage] | None]:
         """Processes a single mirrorcache configuration."""
@@ -80,13 +88,37 @@ class IsoPackagesReport:
         # Cleanup old ISOs
         self._cleanup_old_isos(repo_dir)
 
+        # Caching logic for metadata
+        # We check if we already have the metadata cached
+        # Look for both .gz and plain json
+        metadata_cache_gz = iso_filepath.with_suffix(".packages.json.gz")
+        metadata_cache_plain = iso_filepath.with_suffix(".packages.json")
+
+        if metadata_cache_gz.exists():
+            logging.info(f"Using cached metadata: {metadata_cache_gz.name}")
+            return latest_iso_url, get_packages_from_metadata_file(metadata_cache_gz)
+        if metadata_cache_plain.exists():
+            logging.info(f"Using cached metadata: {metadata_cache_plain.name}")
+            return latest_iso_url, get_packages_from_metadata_file(metadata_cache_plain)
+
+        # Not in cache, we need to mount and extract
         mount_point = CACHE_DIR / "mounts" / self.config.name
         ensure_dir(mount_point)
 
         if mount_iso(iso_filepath, mount_point):
             try:
-                iso_packages = get_packages_from_metadata(mount_point)
-                return latest_iso_url, iso_packages
+                metadata_path = get_metadata_path(mount_point)
+                if metadata_path:
+                    # Cache the metadata file
+                    dest_path = iso_filepath.with_suffix(metadata_path.suffix)
+                    logging.info(f"Caching metadata from ISO to {dest_path.name}")
+                    import shutil
+
+                    shutil.copy2(metadata_path, dest_path)
+                    return latest_iso_url, get_packages_from_metadata_file(dest_path)
+                else:
+                    logging.error(f"No metadata found in mounted ISO: {iso_filename}")
+                    return latest_iso_url, None
             finally:
                 unmount_iso(mount_point)
                 try:

@@ -91,6 +91,21 @@ def get_packages_from_metadata_file(
     return []  # Should not reach here if file exists and is valid JSON/GZIP-JSON
 
 
+def get_metadata_path(mount_point: Path) -> Path | None:
+    """
+    Returns the path to LiveOS/.packages.json.gz or LiveOS/.packages.json if they exist.
+    """
+    metadata_path_gz = mount_point / "LiveOS" / ".packages.json.gz"
+    if metadata_path_gz.exists():
+        return metadata_path_gz
+
+    metadata_path_plain = mount_point / "LiveOS" / ".packages.json"
+    if metadata_path_plain.exists():
+        return metadata_path_plain
+
+    return None
+
+
 def get_packages_from_metadata(mount_point: Path) -> list[BinaryPackage]:
     """
     Parses LiveOS/.packages.json.gz or LiveOS/.packages.json to get a list of all packages.
