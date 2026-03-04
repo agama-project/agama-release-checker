@@ -19,7 +19,7 @@ from .models import (
     GiteaPullRequest,
 )
 from .reporting import (
-    print_git_report,
+    get_git_timestamps,
     extract_git_hashes,
     LinkManager,
 )
@@ -219,23 +219,28 @@ def main() -> None:
                 case GitConfig():
                     pass
 
+        timestamps = get_git_timestamps(
+            all_git_hashes, config.git_configs, link_manager=link_manager
+        )
+
         for iso_rpt, latest_iso_url, iso_pkgs in iso_results:
             iso_rpt.render(
                 latest_iso_url,
                 iso_pkgs,
                 binary_patterns_by_source,
                 link_manager=link_manager,
+                timestamps=timestamps,
             )
         for obs_rpt, obs_pkgs in obs_results:
-            obs_rpt.render(obs_pkgs, link_manager=link_manager)
+            obs_rpt.render(obs_pkgs, link_manager=link_manager, timestamps=timestamps)
         for gitea_rpt, gitea_pkgs in gitea_results:
-            gitea_rpt.render(gitea_pkgs, link_manager=link_manager)
+            gitea_rpt.render(
+                gitea_pkgs, link_manager=link_manager, timestamps=timestamps
+            )
         for pr_rpt, pr_list in gitea_pr_results:
             pr_rpt.render(pr_list)
         for rq_rpt, rq_list in obs_requests_results:
             rq_rpt.render(rq_list)
-
-        print_git_report(all_git_hashes, config.git_configs, link_manager=link_manager)
 
         link_manager.print_definitions()
 

@@ -30,6 +30,26 @@ class SourcePackage:
 
 
 @dataclass
+class GitTimestamp:
+    """The timestamp of a git commit.
+
+    Currently just a formatted string, but encapsulated for future expansion.
+    """
+
+    formatted: str
+
+
+@dataclass
+class GitRevisionTimestamps:
+    """A collection of timestamps for git revisions, keyed by git hash."""
+
+    timestamps: dict[str, GitTimestamp] = field(default_factory=dict)
+
+    def get(self, githash: str) -> GitTimestamp | None:
+        return self.timestamps.get(githash)
+
+
+@dataclass
 class ObsRequest:
     id: str
     state: str

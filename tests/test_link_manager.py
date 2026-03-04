@@ -1,9 +1,14 @@
 from agama_release_checker.reporting import (
     LinkManager,
     print_packages_table,
-    print_git_report,
+    get_git_timestamps,
 )
-from agama_release_checker.models import GitConfig, BinaryPackage
+from agama_release_checker.models import (
+    GitConfig,
+    BinaryPackage,
+    GitTimestamp,
+    GitRevisionTimestamps,
+)
 from unittest.mock import patch
 
 
@@ -44,10 +49,11 @@ def test_print_packages_table_with_links(capsys):
     print_packages_table(all_found, "TEST", link_manager=lm)
     captured = capsys.readouterr()
     assert "1.0.[a6a0f3735][]" in captured.out
+    assert "Git Updated" in captured.out
 
 
 @patch("agama_release_checker.reporting.GitManager")
-def test_print_git_report_with_links(mock_git_manager, capsys):
+def test_get_git_timestamps_with_links(mock_git_manager):
     git_hashes = {"agama": {"abcdef1"}}
     git_configs = [GitConfig(url="https://github.com/a/b/", name="agama")]
     lm = LinkManager(git_configs)
@@ -62,15 +68,11 @@ def test_print_git_report_with_links(mock_git_manager, capsys):
         "agama_release_checker.reporting.format_timestamp",
         return_value="2024-03-04 10:00",
     ):
-        print_git_report(git_hashes, git_configs, link_manager=lm)
+        timestamps = get_git_timestamps(git_hashes, git_configs, link_manager=lm)
 
-    captured = capsys.readouterr()
-    # Description should have the link reference
-    assert "Commit [abcdef1][] message" in captured.out
-    # Link column should be gone
-    assert "| Timestamp        | Description                |" in captured.out
-    assert "| 2024-03-04 10:00 | Commit [abcdef1][] message |" in captured.out
-    assert "Link" not in captured.out
+    assert timestamps == GitRevisionTimestamps(
+        {"abcdef1": GitTimestamp("2024-03-04 10:00")}
+    )
 
 
 def test_link_manager_print_definitions(capsys):

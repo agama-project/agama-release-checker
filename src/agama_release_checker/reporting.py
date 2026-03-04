@@ -8,6 +8,8 @@ from .models import (
     GitConfig,
     BinaryPackage,
     SourcePackage,
+    GitTimestamp,
+    GitRevisionTimestamps,
 )
 
 Package = BinaryPackage | SourcePackage
@@ -125,22 +127,21 @@ class LinkManager:
             print(f"[{githash}]: {url}")
 
 
-def print_git_report(
+def get_git_timestamps(
     git_hashes: dict[str, set[str]],
     git_configs: list[GitConfig],
     link_manager: LinkManager,
-) -> None:
-    """Prints the git commit report."""
+) -> GitRevisionTimestamps:
+    """Gets formatting timestamps for git hashes."""
+    timestamps = GitRevisionTimestamps()
     if not git_hashes:
-        return
+        return timestamps
 
     if not git_configs:
         logging.warning(
-            "No 'git' configuration found in config.yml. Cannot print commit URLs."
+            "No 'git' configuration found in config.yml. Cannot fetch commit timestamps."
         )
-        return
-
-    print("\n## Git Commits")
+        return timestamps
 
     config_map = {cfg.name: cfg for cfg in git_configs}
 
@@ -157,69 +158,65 @@ def print_git_report(
         else:
             logging.debug(f"No git config found for package {source_rpm}")
 
-    for repo_name, hashes in sorted(hashes_by_repo.items()):
+    for repo_name, hashes in hashes_by_repo.items():
         git_config = config_map[repo_name]
-        print(f"\n### Repo: {repo_name}\n")
 
         manager = GitManager(git_config.url, git_config.name)
         manager.update_repo()
 
-        rows = []
         for githash in hashes:
-            timestamp, description = manager.get_commit_info(githash)
-            desc = description or "Unknown"
-            ref = link_manager.register_hash(repo_name, githash)
-            if ref:
-                # If we have a tag or something, the description might have it.
-                # The diff showed: | 2026-03-04 12:16 | v19.pre-1865-g[187e0fd7e] | |
-                # Let's try to wrap the hash in the description too if it matches.
-                if githash in desc:
-                    desc = desc.replace(githash, ref)
-                else:
-                    desc = f"{desc} ({ref})"
-            rows.append([format_timestamp(timestamp), desc])
+            timestamp, _ = manager.get_commit_info(githash)
+            timestamps.timestamps[githash] = GitTimestamp(format_timestamp(timestamp))
 
-        # Sort by timestamp (column 0), handling "Unknown" to appear last
-        rows.sort(key=lambda x: x[0] if x[0] != "Unknown" else "9999-12-31")
-
-        headers = ["Timestamp", "Description"]
-        print_markdown_table(headers, rows)
+    return timestamps
 
 
 def print_packages_table(
     all_found: dict[str, list[T]],
     source_type: str,
     link_manager: LinkManager,
+    timestamps: GitRevisionTimestamps | None = None,
 ) -> None:
     r"""Prints a simplified table of source packages with their version and release.
 
     Checks for inconsistencies within each source package group.
 
     Example:
-        all_found = {
-            "agama": [
-                BinaryPackage(name="agama", version="1.0", release="1", arch="x86_64"),
-                BinaryPackage(name="agama-cli", version="1.0", release="1", arch="x86_64"),
-            ],
-            "agama-web-ui": [
-                SourcePackage(name="agama-web-ui", version="1.1", release="1"),
-                SourcePackage(name="agama-web-ui", version="1.2", release="1"),
-            ]
-        }
-        print_packages_table(all_found, "ISO", link_manager)
+        >>> lm = LinkManager([])
+        >>> all_found = {
+        ...     "agama": [
+        ...         BinaryPackage(name="agama", version="1.0", release="1", arch="x86_64"),
+        ...         BinaryPackage(name="agama-cli", version="1.0", release="1", arch="x86_64"),
+        ...     ],
+        ...     "agama-web-ui": [
+        ...         SourcePackage(name="agama-web-ui", version="1.1", release="1"),
+        ...         SourcePackage(name="agama-web-ui", version="1.2", release="1"),
+        ...     ]
+        ... }
+        >>> print_packages_table(all_found, "ISO", lm)
+        | Git Updated | Source Name  | Version | Release |
+        |-------------|--------------|---------|---------|
+        | Unknown     | agama        | 1.0     | 1       |
+        | Unknown     | agama-web-ui | 1.1     | 1.../!\ |
 
-    Output:
-        | Source Name  | Version | Release   |
-        |--------------|---------|-----------|
-        | agama        | 1.0     | 1         |
-        | agama-web-ui | 1.1     | 1.../!\   |
+        Example with links and timestamps:
+        >>> cfg = GitConfig(name="agama", url="https://github.com/agama-project/agama/")
+        >>> lm = LinkManager([cfg])
+        >>> all_found = {
+        ...     "agama": [SourcePackage(name="agama", version="1.0.a6a0f3735", release="1")]
+        ... }
+        >>> timestamps = GitRevisionTimestamps({"a6a0f3735": GitTimestamp("2024-03-04 10:00")})
+        >>> print_packages_table(all_found, "Gitea", lm, timestamps=timestamps)
+        | Git Updated      | Source Name | Version          | Release |
+        |------------------|-------------|------------------|---------|
+        | 2024-03-04 10:00 | agama       | 1.0.[a6a0f3735][] | 1       |
     """
     flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
     if not flat:
         print(f"  (No matching packages found in {source_type})")
         return
 
-    headers = ["Source Name", "Version", "Release"]
+    headers = ["Git Updated", "Source Name", "Version", "Release"]
     rows: list[list[str]] = []
     for source_rpm, found in sorted(all_found.items()):
         if not found:
@@ -229,6 +226,17 @@ def print_packages_table(
         version = link_manager.format_version(source_rpm, first_pkg.version)
         release = first_pkg.release
 
+        git_updated = ""
+        match = re.search(r"([0-9a-fA-F]{7,})$", first_pkg.version)
+        if match:
+            githash = match.group(1)
+            if timestamps:
+                ts = timestamps.get(githash)
+                if ts:
+                    git_updated = ts.formatted
+        if not git_updated:
+            git_updated = "Unknown"
+
         # Check for inconsistencies
         inconsistent = False
         for pkg in found[1:]:
@@ -237,6 +245,8 @@ def print_packages_table(
                 break
 
         suffix = ".../!\\" if inconsistent else ""
-        rows.append([source_rpm, version, release + suffix])
+        rows.append([git_updated, source_rpm, version, release + suffix])
+
+    rows.sort(key=lambda x: x[0] if x[0] != "Unknown" else "0000-00-00", reverse=True)
 
     print_markdown_table(headers, rows)

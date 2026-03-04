@@ -47,7 +47,7 @@ def test_main_basic_execution(tmp_path):
             "agama_release_checker.main.IsoPackagesReport",
             return_value=mock_iso_report_instance,
         ),
-        patch("agama_release_checker.main.print_git_report") as mock_git_report,
+        patch("agama_release_checker.main.get_git_timestamps") as mock_git_report,
         patch("builtins.open", mock_open()),
     ):
         main()
@@ -92,10 +92,9 @@ def test_main_with_all_report_types(tmp_path):
         patch("agama_release_checker.main.ObsRequestsReport") as mock_obs_req,
         patch("agama_release_checker.main.GiteaPackagesReport") as mock_gitea_pkg,
         patch("agama_release_checker.main.GiteaRequestsReport") as mock_gitea_req,
-        patch("agama_release_checker.main.print_git_report"),
+        patch("agama_release_checker.main.get_git_timestamps"),
         patch("builtins.open", mock_open()),
-    ):
-        # Set up instance mocks
+    ):  # Set up instance mocks
         mock_obs_pkg.return_value.run.return_value = (None, [])
         mock_obs_req.return_value.run.return_value = (None, [])
         mock_gitea_pkg.return_value.run.return_value = (None, [])
@@ -138,7 +137,7 @@ def test_main_repo_filtering(tmp_path):
         ),
         patch("agama_release_checker.main.check_command", return_value=True),
         patch("agama_release_checker.main.IsoPackagesReport") as mock_iso,
-        patch("agama_release_checker.main.print_git_report"),
+        patch("agama_release_checker.main.get_git_timestamps"),
         patch("builtins.open", mock_open()),
     ):
         mock_iso.return_value.run.return_value = (None, [])

@@ -2,13 +2,15 @@ from unittest.mock import patch, MagicMock
 from agama_release_checker.reporting import (
     print_markdown_table,
     extract_git_hashes,
-    print_git_report,
+    get_git_timestamps,
     LinkManager,
 )
 from agama_release_checker.models import (
     BinaryPackage,
     SourcePackage,
     GitConfig,
+    GitTimestamp,
+    GitRevisionTimestamps,
 )
 
 
@@ -67,10 +69,10 @@ def test_extract_git_hashes():
 
 
 @patch("agama_release_checker.reporting.GitManager")
-def test_print_git_report(mock_git_manager, capsys):
+def test_get_git_timestamps(mock_git_manager):
     git_hashes = {
         "agama-web-ui": {"abcdef1"},  # Tests fallback to "agama"
-        "agama": {"abcdef2"},  # Same repo "agama", tests existing key in hashes_by_repo
+        "agama": {"abcdef2"},  # Same repo "agama"
         "unknown-pkg": {"1234567"},  # Tests "No git config found" debug log
     }
     git_configs = [GitConfig(url="https://github.com/a/b/", name="agama")]
@@ -84,28 +86,29 @@ def test_print_git_report(mock_git_manager, capsys):
     with patch("agama_release_checker.reporting.format_timestamp") as mock_fmt:
         mock_fmt.return_value = "2024-03-04 10:00"
         with patch("agama_release_checker.reporting.logging") as mock_logging:
-            print_git_report(git_hashes, git_configs, LinkManager(git_configs))
+            timestamps = get_git_timestamps(
+                git_hashes, git_configs, LinkManager(git_configs)
+            )
             mock_logging.debug.assert_any_call(
                 "No git config found for package unknown-pkg"
             )
 
-    captured = capsys.readouterr()
-    assert "## Git Commits" in captured.out
-    assert "### Repo: agama" in captured.out
-    assert "| 2024-03-04 10:00 | Commit message ([abcdef1][]) |" in captured.out
-    assert "| 2024-03-04 10:00 | Commit message ([abcdef2][]) |" in captured.out
-    assert "https://github.com/a/b/commit/abcdef1" not in captured.out
+    assert timestamps == GitRevisionTimestamps(
+        {
+            "abcdef1": GitTimestamp("2024-03-04 10:00"),
+            "abcdef2": GitTimestamp("2024-03-04 10:00"),
+        }
+    )
 
 
-def test_print_git_report_empty(capsys):
-    print_git_report({}, [], LinkManager([]))
-    captured = capsys.readouterr()
-    assert captured.out == ""
+def test_get_git_timestamps_empty():
+    assert get_git_timestamps({}, [], LinkManager([])) == GitRevisionTimestamps()
 
 
 @patch("agama_release_checker.reporting.logging")
-def test_print_git_report_no_configs(mock_logging, capsys):
-    print_git_report({"agama": {"abcdef1"}}, [], LinkManager([]))
+def test_get_git_timestamps_no_configs(mock_logging):
+    assert (
+        get_git_timestamps({"agama": {"abcdef1"}}, [], LinkManager([]))
+        == GitRevisionTimestamps()
+    )
     mock_logging.warning.assert_called_once()
-    captured = capsys.readouterr()
-    assert "## Git Commits" not in captured.out

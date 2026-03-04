@@ -16,7 +16,12 @@ from agama_release_checker.iso_utils import (
     get_metadata_path,
     get_packages_from_metadata_file,
 )
-from agama_release_checker.models import MirrorcacheConfig, BinaryPackage
+from agama_release_checker.models import (
+    MirrorcacheConfig,
+    BinaryPackage,
+    GitTimestamp,
+    GitRevisionTimestamps,
+)
 from agama_release_checker.network import find_iso_urls, download_file
 from agama_release_checker.reporting import print_markdown_table, print_packages_table
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
@@ -146,6 +151,7 @@ class IsoPackagesReport:
         binary_patterns_by_source: dict[str, list[str]],
         packages: Sequence[BinaryPackage],
         link_manager: "LinkManager",
+        timestamps: GitRevisionTimestamps | None = None,
     ) -> None:
         """Prints a simplified table of source packages with their version and release."""
         pkg_map = {pkg.name: pkg for pkg in packages}
@@ -160,7 +166,9 @@ class IsoPackagesReport:
             # Sort by name to be deterministic for "picking the first one"
             all_found[source_rpm] = sorted(found, key=lambda p: p.name)
 
-        print_packages_table(all_found, "ISO", link_manager=link_manager)
+        print_packages_table(
+            all_found, "ISO", link_manager=link_manager, timestamps=timestamps
+        )
 
     def render(
         self,
@@ -168,6 +176,7 @@ class IsoPackagesReport:
         packages: list[BinaryPackage] | None,
         binary_patterns_by_source: dict[str, list[str]],
         link_manager: "LinkManager",
+        timestamps: GitRevisionTimestamps | None = None,
     ) -> None:
         """Renders the ISO packages report as markdown."""
         print(f"\n## ISO: {self.config.name}\n")
@@ -175,7 +184,10 @@ class IsoPackagesReport:
             print(f"URL: {latest_iso_url}\n")
         if packages:
             self._print_packages_table(
-                binary_patterns_by_source, packages, link_manager=link_manager
+                binary_patterns_by_source,
+                packages,
+                link_manager=link_manager,
+                timestamps=timestamps,
             )
         else:
             print("  (No packages found)")

@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agama_release_checker.reporting import LinkManager
 
-from agama_release_checker.models import ObsConfig, SourcePackage
+from agama_release_checker.models import (
+    ObsConfig,
+    SourcePackage,
+    GitTimestamp,
+    GitRevisionTimestamps,
+)
 from agama_release_checker.reporting import print_markdown_table, print_packages_table
 from agama_release_checker.utils import CACHE_DIR
 from agama_release_checker.caching import run_cached_command
@@ -157,6 +162,7 @@ class ObsPackagesReport:
         self,
         packages: Sequence[SourcePackage],
         link_manager: "LinkManager",
+        timestamps: GitRevisionTimestamps | None = None,
     ) -> None:
         """Prints a simplified table of source packages with their version and release."""
         pkg_map = {pkg.name: pkg for pkg in packages}
@@ -170,17 +176,22 @@ class ObsPackagesReport:
                     found.append(pkg_map[source_name])
             all_found[obs_package] = sorted(found, key=lambda p: p.name)
 
-        print_packages_table(all_found, "OBS", link_manager=link_manager)
+        print_packages_table(
+            all_found, "OBS", link_manager=link_manager, timestamps=timestamps
+        )
 
     def render(
         self,
         packages: list[SourcePackage] | None,
         link_manager: "LinkManager",
+        timestamps: GitRevisionTimestamps | None = None,
     ) -> None:
         """Renders the OBS packages report as markdown."""
         print(f"\n## OBS: {self.config.name}\n")
         print(f"Project: {self.config.url}\n")
         if packages:
-            self._print_source_packages_table(packages, link_manager=link_manager)
+            self._print_source_packages_table(
+                packages, link_manager=link_manager, timestamps=timestamps
+            )
         else:
             print("  (No packages found)")
