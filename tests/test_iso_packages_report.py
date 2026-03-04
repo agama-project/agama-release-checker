@@ -82,7 +82,7 @@ def test_iso_packages_report_caching(tmp_path, caplog):
         assert len(packages) == 1
         # mount_iso should NOT be called again if cached
         assert mock_mount.call_count == 1
-        assert "Using cached metadata" in caplog.text
+        assert "In cache" in caplog.text
 
 
 def test_iso_packages_report_cleanup(tmp_path):

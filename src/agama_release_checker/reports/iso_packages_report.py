@@ -82,7 +82,7 @@ class IsoPackagesReport:
             if not download_file(latest_iso_url, iso_filepath):
                 return latest_iso_url, None  # Skip if download fails
         else:
-            logging.info(f"In cache: {iso_filename}")
+            logging.info(f"In cache: {iso_filepath}")
             # Touch the file to update mtime, ensuring it's treated as recent
             try:
                 iso_filepath.touch()
@@ -99,10 +99,10 @@ class IsoPackagesReport:
         metadata_cache_plain = iso_filepath.with_suffix(".packages.json")
 
         if metadata_cache_gz.exists():
-            logging.info(f"Using cached metadata: {metadata_cache_gz.name}")
+            logging.info(f"In cache: {metadata_cache_gz}")
             return latest_iso_url, get_packages_from_metadata_file(metadata_cache_gz)
         if metadata_cache_plain.exists():
-            logging.info(f"Using cached metadata: {metadata_cache_plain.name}")
+            logging.info(f"In cache: {metadata_cache_plain}")
             return latest_iso_url, get_packages_from_metadata_file(metadata_cache_plain)
 
         # Not in cache, we need to mount and extract

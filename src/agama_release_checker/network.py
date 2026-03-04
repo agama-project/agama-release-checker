@@ -19,7 +19,7 @@ def cached_get(url: str, cache_file: Path | None = None) -> str | None:
     content = ""
     if cache_file and cache_file.exists():
         if time.time() - cache_file.stat().st_mtime < 3600:
-            logging.info(f"Using cached index: {cache_file}")
+            logging.info(f"In cache: {cache_file}")
             try:
                 with open(cache_file, "r") as f:
                     content = f.read()
