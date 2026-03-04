@@ -21,6 +21,7 @@ from .models import (
 from .reporting import (
     print_git_report,
     extract_git_hashes,
+    LinkManager,
 )
 from .reports.iso_packages_report import IsoPackagesReport
 from .reports.obs_packages_report import ObsPackagesReport
@@ -95,6 +96,10 @@ def main() -> None:
         sys.exit(1)
         return
 
+    ensure_dir(CACHE_DIR)
+    config: AppConfig = AppConfig.from_file(Path("config.yml"))
+    link_manager = LinkManager(config.git_configs)
+
     with open(args.output, "w") as f, redirect_stdout(f):
         logging.info(f"Writing the report to {args.output}")
 
@@ -114,9 +119,6 @@ def main() -> None:
                 logging.info("On Debian/Ubuntu, try: sudo apt-get install fuseiso")
             sys.exit(1)
             return
-
-        ensure_dir(CACHE_DIR)
-        config: AppConfig = AppConfig.from_file(Path("config.yml"))
 
         iso_results: list[
             tuple[IsoPackagesReport, str | None, list[BinaryPackage] | None]
@@ -218,17 +220,24 @@ def main() -> None:
                     pass
 
         for iso_rpt, latest_iso_url, iso_pkgs in iso_results:
-            iso_rpt.render(latest_iso_url, iso_pkgs, binary_patterns_by_source)
+            iso_rpt.render(
+                latest_iso_url,
+                iso_pkgs,
+                binary_patterns_by_source,
+                link_manager=link_manager,
+            )
         for obs_rpt, obs_pkgs in obs_results:
-            obs_rpt.render(obs_pkgs)
+            obs_rpt.render(obs_pkgs, link_manager=link_manager)
         for gitea_rpt, gitea_pkgs in gitea_results:
-            gitea_rpt.render(gitea_pkgs)
+            gitea_rpt.render(gitea_pkgs, link_manager=link_manager)
         for pr_rpt, pr_list in gitea_pr_results:
             pr_rpt.render(pr_list)
         for rq_rpt, rq_list in obs_requests_results:
             rq_rpt.render(rq_list)
 
-        print_git_report(all_git_hashes, config.git_configs)
+        print_git_report(all_git_hashes, config.git_configs, link_manager=link_manager)
+
+        link_manager.print_definitions()
 
         print()
         print("---")

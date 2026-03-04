@@ -3,6 +3,10 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlparse
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from agama_release_checker.reporting import LinkManager
 
 from agama_release_checker.models import GiteaConfig, SourcePackage
 from agama_release_checker.reporting import print_markdown_table, print_packages_table
@@ -204,7 +208,11 @@ class GiteaPackagesReport:
 
         return None, all_packages
 
-    def _print_source_packages_table(self, packages: Sequence[SourcePackage]) -> None:
+    def _print_source_packages_table(
+        self,
+        packages: Sequence[SourcePackage],
+        link_manager: "LinkManager",
+    ) -> None:
         """Prints a simplified table of source packages with their version and release."""
         pkg_map = {pkg.name: pkg for pkg in packages}
         all_found: dict[str, list[SourcePackage]] = {}
@@ -217,13 +225,17 @@ class GiteaPackagesReport:
                     found.append(pkg_map[source_name])
             all_found[obs_package] = sorted(found, key=lambda p: p.name)
 
-        print_packages_table(all_found, "Gitea")
+        print_packages_table(all_found, "Gitea", link_manager=link_manager)
 
-    def render(self, packages: list[SourcePackage] | None) -> None:
+    def render(
+        self,
+        packages: list[SourcePackage] | None,
+        link_manager: "LinkManager",
+    ) -> None:
         """Renders the Gitea packages report as markdown."""
         print(f"\n## Gitea: {self.config.name}\n")
         print(f"URL: {self.config.url}\n")
         if packages:
-            self._print_source_packages_table(packages)
+            self._print_source_packages_table(packages, link_manager=link_manager)
         else:
             print("  (No packages found)")

@@ -4,6 +4,10 @@ from collections.abc import Sequence
 
 import fnmatch
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from agama_release_checker.reporting import LinkManager
 
 from agama_release_checker.iso_utils import (
     mount_iso,
@@ -131,6 +135,7 @@ class IsoPackagesReport:
         self,
         binary_patterns_by_source: dict[str, list[str]],
         packages: Sequence[BinaryPackage],
+        link_manager: "LinkManager",
     ) -> None:
         """Prints a simplified table of source packages with their version and release."""
         pkg_map = {pkg.name: pkg for pkg in packages}
@@ -145,19 +150,22 @@ class IsoPackagesReport:
             # Sort by name to be deterministic for "picking the first one"
             all_found[source_rpm] = sorted(found, key=lambda p: p.name)
 
-        print_packages_table(all_found, "ISO")
+        print_packages_table(all_found, "ISO", link_manager=link_manager)
 
     def render(
         self,
         latest_iso_url: str | None,
         packages: list[BinaryPackage] | None,
         binary_patterns_by_source: dict[str, list[str]],
+        link_manager: "LinkManager",
     ) -> None:
         """Renders the ISO packages report as markdown."""
         print(f"\n## ISO: {self.config.name}\n")
         if latest_iso_url:
             print(f"URL: {latest_iso_url}\n")
         if packages:
-            self._print_packages_table(binary_patterns_by_source, packages)
+            self._print_packages_table(
+                binary_patterns_by_source, packages, link_manager=link_manager
+            )
         else:
             print("  (No packages found)")

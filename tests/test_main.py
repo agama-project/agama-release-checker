@@ -168,8 +168,14 @@ def test_main_missing_commands():
     mock_args.output = "dummy.md"
     mock_args.verbose = False
 
+    mock_config = MagicMock(spec=AppConfig)
+    mock_config.git_configs = []
+
     with (
         patch("argparse.ArgumentParser.parse_args", return_value=mock_args),
+        patch(
+            "agama_release_checker.main.AppConfig.from_file", return_value=mock_config
+        ),
         patch("agama_release_checker.main.check_command", return_value=False),
         patch("sys.exit") as mock_exit,
         patch("builtins.open", mock_open()),

@@ -3,6 +3,7 @@ from agama_release_checker.reporting import (
     print_markdown_table,
     extract_git_hashes,
     print_git_report,
+    LinkManager,
 )
 from agama_release_checker.models import (
     BinaryPackage,
@@ -83,7 +84,7 @@ def test_print_git_report(mock_git_manager, capsys):
     with patch("agama_release_checker.reporting.format_timestamp") as mock_fmt:
         mock_fmt.return_value = "2024-03-04 10:00"
         with patch("agama_release_checker.reporting.logging") as mock_logging:
-            print_git_report(git_hashes, git_configs)
+            print_git_report(git_hashes, git_configs, LinkManager(git_configs))
             mock_logging.debug.assert_any_call(
                 "No git config found for package unknown-pkg"
             )
@@ -91,21 +92,20 @@ def test_print_git_report(mock_git_manager, capsys):
     captured = capsys.readouterr()
     assert "## Git Commits" in captured.out
     assert "### Repo: agama" in captured.out
-    assert (
-        "| 2024-03-04 10:00 | Commit message | https://github.com/a/b/commit/abcdef1 |"
-        in captured.out
-    )
+    assert "| 2024-03-04 10:00 | Commit message ([abcdef1][]) |" in captured.out
+    assert "| 2024-03-04 10:00 | Commit message ([abcdef2][]) |" in captured.out
+    assert "https://github.com/a/b/commit/abcdef1" not in captured.out
 
 
 def test_print_git_report_empty(capsys):
-    print_git_report({}, [])
+    print_git_report({}, [], LinkManager([]))
     captured = capsys.readouterr()
     assert captured.out == ""
 
 
 @patch("agama_release_checker.reporting.logging")
 def test_print_git_report_no_configs(mock_logging, capsys):
-    print_git_report({"agama": {"abcdef1"}}, [])
+    print_git_report({"agama": {"abcdef1"}}, [], LinkManager([]))
     mock_logging.warning.assert_called_once()
     captured = capsys.readouterr()
     assert "## Git Commits" not in captured.out

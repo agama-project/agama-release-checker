@@ -76,9 +76,59 @@ def print_markdown_table(headers: list[str], rows: list[list[str]]) -> None:
         print(row_str)
 
 
+class LinkManager:
+    """Manages markdown reference links for git commits."""
+
+    def __init__(self, git_configs: Sequence[GitConfig]) -> None:
+        self.config_map = {cfg.name: cfg for cfg in git_configs}
+        self.links: dict[str, str] = {}
+
+    def get_repo_config(self, source_rpm: str) -> GitConfig | None:
+        """Determines the GitConfig for a given source RPM name."""
+        repo_name = source_rpm
+        if repo_name not in self.config_map and "agama" in source_rpm:
+            if "agama" in self.config_map:
+                repo_name = "agama"
+        return self.config_map.get(repo_name)
+
+    def register_hash(self, source_rpm: str, githash: str) -> str | None:
+        """Registers a git hash and returns its reference link or None if repo unknown."""
+        config = self.get_repo_config(source_rpm)
+        if config:
+            url = urljoin(config.url, f"commit/{githash}")
+            self.links[githash] = url
+            return f"[{githash}][]"
+        return None
+
+    def format_version(self, source_rpm: str, version: str) -> str:
+        """Formats a version string, replacing a trailing git hash with a reference link.
+
+        Example:
+            >>> manager = LinkManager([GitConfig(name="agama", url="https://github.com/agama-project/agama/")])
+            >>> manager.format_version("agama", "1.0.a6a0f3735")
+            '1.0.[a6a0f3735][]'
+        """
+        match = re.search(r"([0-9a-fA-F]{7,})$", version)
+        if match:
+            githash = match.group(1)
+            ref = self.register_hash(source_rpm, githash)
+            if ref:
+                return version[: match.start(1)] + ref
+        return version
+
+    def print_definitions(self) -> None:
+        """Prints the markdown reference definitions at the end of the report."""
+        if not self.links:
+            return
+        print()
+        for githash, url in sorted(self.links.items()):
+            print(f"[{githash}]: {url}")
+
+
 def print_git_report(
     git_hashes: dict[str, set[str]],
     git_configs: list[GitConfig],
+    link_manager: LinkManager,
 ) -> None:
     """Prints the git commit report."""
     if not git_hashes:
@@ -98,14 +148,9 @@ def print_git_report(
     hashes_by_repo: dict[str, set[str]] = {}
 
     for source_rpm, hashes in git_hashes.items():
-        repo_name = source_rpm
-
-        # Fallback logic: if repo not known but package contains "agama", try "agama" repo
-        if repo_name not in config_map and "agama" in source_rpm:
-            if "agama" in config_map:
-                repo_name = "agama"
-
-        if repo_name in config_map:
+        config = link_manager.get_repo_config(source_rpm)
+        if config:
+            repo_name = config.name
             if repo_name not in hashes_by_repo:
                 hashes_by_repo[repo_name] = set()
             hashes_by_repo[repo_name].update(hashes)
@@ -114,7 +159,6 @@ def print_git_report(
 
     for repo_name, hashes in sorted(hashes_by_repo.items()):
         git_config = config_map[repo_name]
-        git_base_url = git_config.url
         print(f"\n### Repo: {repo_name}\n")
 
         manager = GitManager(git_config.url, git_config.name)
@@ -123,25 +167,29 @@ def print_git_report(
         rows = []
         for githash in hashes:
             timestamp, description = manager.get_commit_info(githash)
-            link = urljoin(git_base_url, f"commit/{githash}")
-            rows.append(
-                [
-                    format_timestamp(timestamp),
-                    description or "Unknown",
-                    link,
-                ]
-            )
+            desc = description or "Unknown"
+            ref = link_manager.register_hash(repo_name, githash)
+            if ref:
+                # If we have a tag or something, the description might have it.
+                # The diff showed: | 2026-03-04 12:16 | v19.pre-1865-g[187e0fd7e] | |
+                # Let's try to wrap the hash in the description too if it matches.
+                if githash in desc:
+                    desc = desc.replace(githash, ref)
+                else:
+                    desc = f"{desc} ({ref})"
+            rows.append([format_timestamp(timestamp), desc])
 
         # Sort by timestamp (column 0), handling "Unknown" to appear last
         rows.sort(key=lambda x: x[0] if x[0] != "Unknown" else "9999-12-31")
 
-        headers = ["Timestamp", "Description", "Link"]
+        headers = ["Timestamp", "Description"]
         print_markdown_table(headers, rows)
 
 
 def print_packages_table(
     all_found: dict[str, list[T]],
     source_type: str,
+    link_manager: LinkManager,
 ) -> None:
     r"""Prints a simplified table of source packages with their version and release.
 
@@ -158,7 +206,7 @@ def print_packages_table(
                 SourcePackage(name="agama-web-ui", version="1.2", release="1"),
             ]
         }
-        print_packages_table(all_found, "ISO")
+        print_packages_table(all_found, "ISO", link_manager)
 
     Output:
         | Source Name  | Version | Release   |
@@ -178,13 +226,13 @@ def print_packages_table(
             continue
 
         first_pkg = found[0]
-        version = first_pkg.version
+        version = link_manager.format_version(source_rpm, first_pkg.version)
         release = first_pkg.release
 
         # Check for inconsistencies
         inconsistent = False
         for pkg in found[1:]:
-            if pkg.version != version or pkg.release != release:
+            if pkg.version != first_pkg.version or pkg.release != release:
                 inconsistent = True
                 break
 
