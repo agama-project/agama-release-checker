@@ -100,7 +100,7 @@ class IsoPackagesReport:
         binary_patterns_by_source: dict[str, list[str]],
         packages: Sequence[BinaryPackage],
     ) -> None:
-        """Prints a formatted table of binary packages grouped by source."""
+        """Prints a simplified table of source packages with their version and release."""
         pkg_map = {pkg.name: pkg for pkg in packages}
         all_found: dict[str, list[BinaryPackage]] = {}
 
@@ -110,6 +110,7 @@ class IsoPackagesReport:
                 for pkg_name, pkg_details in pkg_map.items():
                     if fnmatch.fnmatch(pkg_name, pattern):
                         found.append(pkg_details)
+            # Sort by name to be deterministic for "picking the first one"
             all_found[source_rpm] = sorted(found, key=lambda p: p.name)
 
         flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
@@ -117,12 +118,26 @@ class IsoPackagesReport:
             print("  (No matching packages found in ISO)")
             return
 
-        headers = ["Source Name", "Name", "Version", "Release"]
+        headers = ["Source Name", "Version", "Release"]
         rows: list[list[str]] = []
         for source_rpm, found in sorted(all_found.items()):
-            rows.append([source_rpm, "", "", ""])
-            for pkg in found:
-                rows.append(["", pkg.name, pkg.version, pkg.release])
+            if not found:
+                continue
+
+            first_pkg = found[0]
+            version = first_pkg.version
+            release = first_pkg.release
+
+            # Check for inconsistencies
+            inconsistent = False
+            for pkg in found[1:]:
+                if pkg.version != version or pkg.release != release:
+                    inconsistent = True
+                    break
+
+            suffix = ".../!\\" if inconsistent else ""
+            rows.append([source_rpm, version, release + suffix])
+
         print_markdown_table(headers, rows)
 
     def render(

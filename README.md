@@ -16,6 +16,16 @@ so that this can be made useful for other teams and projects.
 
 [Agama]: https://github.com/agama-project/agama/
 
+### Usage
+
+Run `./agama-release-checker --help` to see all options.
+
+Common options:
+  -o, --output FILE   Specify the output file (default: agama-release-status.md)
+  --timezone TZ       Specify the timezone for timestamps (default: Europe/Berlin)
+  -v, --verbose       Enable verbose logging
+  -r, --repo REPO     Process only the specified repository (can be repeated)
+
 ### License
 
 GPL-2.0-or-later (like Agama itself)

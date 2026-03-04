@@ -12,6 +12,7 @@ from .models import (
 
 Package = BinaryPackage | SourcePackage
 from .git_manager import GitManager
+from .utils import format_timestamp
 
 
 def extract_git_hashes(
@@ -115,7 +116,7 @@ def print_git_report(
             link = urljoin(git_base_url, f"commit/{githash}")
             rows.append(
                 [
-                    timestamp or "Unknown",
+                    format_timestamp(timestamp),
                     description or "Unknown",
                     link,
                 ]

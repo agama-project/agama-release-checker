@@ -20,3 +20,27 @@ agama-release-checker gathers enough data for now, let's work on presenting it b
 
     - Omit the Name column entirely, and put Version and Release on the same
       line as the Source Name
+
+## Tasks
+
+### Footer and Output
+- [x] Add `--output/-o` option to `main.py`, default to `agama-release-status.md`
+- [x] Add footer with link to the repository in `main.py`
+- [x] Redirect report output to the specified file
+
+### Timezone and Timestamps
+- [x] Add `--timezone` option to `main.py`, default to `Europe/Berlin`
+- [x] Implement `format_timestamp` utility in `src/agama_release_checker/utils.py`
+- [x] Update "Generated on" header with timezone info
+- [x] Update `print_git_report` in `src/agama_release_checker/reporting.py` to use formatted timestamps
+- [x] Update `ObsRequestsReport` to use formatted timestamps
+- [x] Update `GiteaRequestsReport` to use formatted timestamps
+
+### Package Tables simplification
+- [x] Update `IsoPackagesReport._print_packages_table`
+- [x] Update `ObsPackagesReport._print_source_packages_table`
+- [x] Update `GiteaPackagesReport._print_source_packages_table`
+
+### Final Verification
+- [x] Run `make check`
+- [x] Manually verify formatting and timezone conversion

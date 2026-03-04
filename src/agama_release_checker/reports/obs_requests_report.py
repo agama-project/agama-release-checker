@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from agama_release_checker.models import ObsConfig, ObsRequest
 from agama_release_checker.reporting import print_markdown_table
-from agama_release_checker.utils import CACHE_DIR
+from agama_release_checker.utils import CACHE_DIR, format_timestamp
 from agama_release_checker.caching import run_cached_command
 
 
@@ -167,7 +167,14 @@ class ObsRequestsReport:
             source = f"{req.source_project}/{req.source_package}"
             target = f"{req.target_project}/{req.target_package}"
             rows.append(
-                [req.updated_at, req.created_at, req.id, req.state, source, target]
+                [
+                    format_timestamp(req.updated_at),
+                    format_timestamp(req.created_at),
+                    req.id,
+                    req.state,
+                    source,
+                    target,
+                ]
             )
 
         rows.sort(key=lambda x: x[0])

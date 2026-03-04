@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from agama_release_checker.models import GiteaConfig, GiteaPullRequest
 from agama_release_checker.reporting import print_markdown_table
 from agama_release_checker.caching import run_cached_command
-from agama_release_checker.utils import CACHE_DIR
+from agama_release_checker.utils import CACHE_DIR, format_timestamp
 
 
 class GiteaRequestsReport:
@@ -122,7 +122,7 @@ class GiteaRequestsReport:
         for pr in prs:
             rows.append(
                 [
-                    pr.updated_at,
+                    format_timestamp(pr.updated_at),
                     f"[{pr.index}]({pr.url})",
                     pr.state,
                     "Yes" if pr.mergeable else "No",
