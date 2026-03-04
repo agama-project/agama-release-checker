@@ -13,6 +13,9 @@ from .models import (
 Package = BinaryPackage | SourcePackage
 from .git_manager import GitManager
 from .utils import format_timestamp
+from typing import TypeVar
+
+T = TypeVar("T", BinaryPackage, SourcePackage)
 
 
 def extract_git_hashes(
@@ -127,3 +130,58 @@ def print_git_report(
 
         headers = ["Timestamp", "Description", "Link"]
         print_markdown_table(headers, rows)
+
+
+def print_packages_table(
+    all_found: dict[str, list[T]],
+    source_type: str,
+) -> None:
+    r"""Prints a simplified table of source packages with their version and release.
+
+    Checks for inconsistencies within each source package group.
+
+    Example:
+        all_found = {
+            "agama": [
+                BinaryPackage(name="agama", version="1.0", release="1", arch="x86_64"),
+                BinaryPackage(name="agama-cli", version="1.0", release="1", arch="x86_64"),
+            ],
+            "agama-web-ui": [
+                SourcePackage(name="agama-web-ui", version="1.1", release="1"),
+                SourcePackage(name="agama-web-ui", version="1.2", release="1"),
+            ]
+        }
+        print_packages_table(all_found, "ISO")
+
+    Output:
+        | Source Name  | Version   | Release |
+        |--------------|-----------|---------|
+        | agama        | 1.0       | 1       |
+        | agama-web-ui | 1.1.../!\ | 1       |
+    """
+    flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
+    if not flat:
+        print(f"  (No matching packages found in {source_type})")
+        return
+
+    headers = ["Source Name", "Version", "Release"]
+    rows: list[list[str]] = []
+    for source_rpm, found in sorted(all_found.items()):
+        if not found:
+            continue
+
+        first_pkg = found[0]
+        version = first_pkg.version
+        release = first_pkg.release
+
+        # Check for inconsistencies
+        inconsistent = False
+        for pkg in found[1:]:
+            if pkg.version != version or pkg.release != release:
+                inconsistent = True
+                break
+
+        suffix = ".../!\\" if inconsistent else ""
+        rows.append([source_rpm, version, release + suffix])
+
+    print_markdown_table(headers, rows)

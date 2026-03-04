@@ -12,7 +12,7 @@ from agama_release_checker.iso_utils import (
 )
 from agama_release_checker.models import MirrorcacheConfig, BinaryPackage
 from agama_release_checker.network import find_iso_urls, download_file
-from agama_release_checker.reporting import print_markdown_table
+from agama_release_checker.reporting import print_markdown_table, print_packages_table
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 
 
@@ -113,32 +113,7 @@ class IsoPackagesReport:
             # Sort by name to be deterministic for "picking the first one"
             all_found[source_rpm] = sorted(found, key=lambda p: p.name)
 
-        flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
-        if not flat:
-            print("  (No matching packages found in ISO)")
-            return
-
-        headers = ["Source Name", "Version", "Release"]
-        rows: list[list[str]] = []
-        for source_rpm, found in sorted(all_found.items()):
-            if not found:
-                continue
-
-            first_pkg = found[0]
-            version = first_pkg.version
-            release = first_pkg.release
-
-            # Check for inconsistencies
-            inconsistent = False
-            for pkg in found[1:]:
-                if pkg.version != version or pkg.release != release:
-                    inconsistent = True
-                    break
-
-            suffix = ".../!\\" if inconsistent else ""
-            rows.append([source_rpm, version, release + suffix])
-
-        print_markdown_table(headers, rows)
+        print_packages_table(all_found, "ISO")
 
     def render(
         self,

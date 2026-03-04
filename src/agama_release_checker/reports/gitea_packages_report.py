@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from agama_release_checker.models import GiteaConfig, SourcePackage
-from agama_release_checker.reporting import print_markdown_table
+from agama_release_checker.reporting import print_markdown_table, print_packages_table
 from agama_release_checker.utils import CACHE_DIR, ensure_dir
 from agama_release_checker.parsing import parse_obsinfo, parse_spec
 
@@ -217,32 +217,7 @@ class GiteaPackagesReport:
                     found.append(pkg_map[source_name])
             all_found[obs_package] = sorted(found, key=lambda p: p.name)
 
-        flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
-        if not flat:
-            print("  (No matching packages found in Gitea)")
-            return
-
-        headers = ["Source Name", "Version", "Release"]
-        rows: list[list[str]] = []
-        for source_rpm, found in sorted(all_found.items()):
-            if not found:
-                continue
-
-            first_pkg = found[0]
-            version = first_pkg.version
-            release = first_pkg.release
-
-            # Check for inconsistencies
-            inconsistent = False
-            for pkg in found[1:]:
-                if pkg.version != version or pkg.release != release:
-                    inconsistent = True
-                    break
-
-            suffix = ".../!\\" if inconsistent else ""
-            rows.append([source_rpm, version, release + suffix])
-
-        print_markdown_table(headers, rows)
+        print_packages_table(all_found, "Gitea")
 
     def render(self, packages: list[SourcePackage] | None) -> None:
         """Renders the Gitea packages report as markdown."""
