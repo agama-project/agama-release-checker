@@ -64,7 +64,7 @@ def test_iso_packages_report_caching(tmp_path, caplog):
         report = IsoPackagesReport(config)
 
         # First run: should mount and cache
-        with patch("shutil.copy2") as mock_copy:
+        with patch("shutil.copy") as mock_copy:
             latest_url, packages = report.run()
 
             assert latest_url == "http://example.com/iso/test.iso"

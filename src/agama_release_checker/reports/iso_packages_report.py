@@ -113,12 +113,22 @@ class IsoPackagesReport:
             try:
                 metadata_path = get_metadata_path(mount_point)
                 if metadata_path:
-                    # Cache the metadata file
-                    dest_path = iso_filepath.with_suffix(metadata_path.suffix)
+                    # Cache the metadata file, using the same suffix
+                    # convention as the cache lookup above
+                    if metadata_path.name.endswith(".packages.json.gz"):
+                        cache_suffix = ".packages.json.gz"
+                    else:
+                        cache_suffix = ".packages.json"
+                    dest_path = iso_filepath.with_suffix(cache_suffix)
                     logging.info(f"Caching metadata from ISO to {dest_path.name}")
                     import shutil
 
-                    shutil.copy2(metadata_path, dest_path)
+                    # Remove existing file first — copy2 preserves the
+                    # ISO's read-only permissions, so a stale copy would
+                    # block overwriting.
+                    if dest_path.exists():
+                        dest_path.unlink()
+                    shutil.copy(metadata_path, dest_path)
                     return latest_iso_url, get_packages_from_metadata_file(dest_path)
                 else:
                     logging.error(f"No metadata found in mounted ISO: {iso_filename}")
