@@ -26,3 +26,4 @@ Plan first and make a task list, adding it to this file.
       Keep the simple one and add one with meaningful link manager and timestamps.
 - [x] Refactor `dict[str, GitTimestamp]` into `GitRevisionTimestamps` dataclass.
 - [x] Ensure all time-sorted tables (OBS requests, Gitea PRs) are presented most recent first.
+- [x] Enable and verify doctests with `pytest --doctest-modules`.

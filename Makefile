@@ -5,9 +5,9 @@ check-black:
 check-mypy:
 	mypy ${MAIN}
 check-pytest:
-	PYTHONPATH=src pytest --cov --cov-report=term --cov-report=html tests/
+	PYTHONPATH=src pytest --doctest-modules --cov --cov-report=term --cov-report=html src tests/
 check-pytest-nocov:
-	PYTHONPATH=src pytest tests/
+	PYTHONPATH=src pytest --doctest-modules src tests/
 
 .PHONY: docs
 docs:

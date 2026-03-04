@@ -207,8 +207,8 @@ def print_packages_table(
         ... }
         >>> timestamps = GitRevisionTimestamps({"a6a0f3735": GitTimestamp("2024-03-04 10:00")})
         >>> print_packages_table(all_found, "Gitea", lm, timestamps=timestamps)
-        | Git Updated      | Source Name | Version          | Release |
-        |------------------|-------------|------------------|---------|
+        | Git Updated      | Source Name | Version           | Release |
+        |------------------|-------------|-------------------|---------|
         | 2024-03-04 10:00 | agama       | 1.0.[a6a0f3735][] | 1       |
     """
     flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
