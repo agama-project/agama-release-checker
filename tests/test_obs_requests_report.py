@@ -55,9 +55,9 @@ def test_obs_submit_requests_report(mock_run_cached):
     assert req.target_project == "openSUSE:Factory"
     assert req.target_package == "agama"
     assert "Current development branch of agama" in req.description
-    assert req.created_at == "2025-09-05T14:53:29"
+    assert req.created_at == "2025-09-05T14:53:29Z"
     # updated_at corresponds to 'when' attribute in the state element
-    assert req.updated_at == "2025-09-05T14:55:46"
+    assert req.updated_at == "2025-09-05T14:55:46Z"
 
 
 @patch("agama_release_checker.reports.obs_requests_report.datetime")

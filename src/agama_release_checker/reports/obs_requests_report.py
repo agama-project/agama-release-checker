@@ -101,13 +101,19 @@ class ObsRequestsReport:
                     state_name = (
                         state_elem.get("name") if state_elem is not None else "unknown"
                     ) or "unknown"
+                    # OBS XML API provides naive timestamps, but they are in UTC
                     created_at = (
                         state_elem.get("created") if state_elem is not None else ""
                     ) or ""
+                    if created_at:
+                        created_at += "Z"  # UTC is implied, confirmed by experiment
+
                     # "when" is updated time?
                     updated_at = (
                         state_elem.get("when") if state_elem is not None else ""
                     ) or ""
+                    if updated_at:
+                        updated_at += "Z"  # UTC is implied, confirmed by experiment
 
                     action_elem = req_elem.find("action")
                     if action_elem is None:

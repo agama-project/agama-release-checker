@@ -35,6 +35,9 @@ agama-release-checker gathers enough data for now, let's work on presenting it b
 - [x] Update `print_git_report` in `src/agama_release_checker/reporting.py` to use formatted timestamps
 - [x] Update `ObsRequestsReport` to use formatted timestamps
 - [x] Update `GiteaRequestsReport` to use formatted timestamps
+- [x] format_timestamp: change it to strictly require ISO format with time zone on input
+- [x] adjust input sources to format_timestamp to be ISO with time zone. For OBS Requests
+      (which have no TZ), assume UTC and add a comment: "UTC is implied, confirmed by experiment"
 
 ### Package Tables simplification
 - [x] Update `IsoPackagesReport._print_packages_table`

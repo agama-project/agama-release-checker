@@ -1,4 +1,5 @@
 import datetime
+import logging
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -16,26 +17,25 @@ def ensure_dir(path: Path) -> None:
 def format_timestamp(ts_str: str | None) -> str:
     """Parses a timestamp string and formats it according to REPORT_TIMEZONE.
 
-    Handles formats like:
-    - 2025-02-18 10:48:42 (assumed UTC if no TZ)
+    Requires ISO 8601 format with timezone information.
+    Examples of accepted input:
     - 2025-03-04 11:47:33 +0200
-    - ISO 8601
+    - 2026-02-03T09:27:06Z
     """
     if not ts_str or ts_str == "Unknown":
         return "Unknown"
 
     try:
-        # Try to parse with fromisoformat (handles most common formats in 3.11+)
-        # If it has a space but no T, fromisoformat might still work in 3.11+
         dt = datetime.datetime.fromisoformat(ts_str.strip())
 
-        # If it's naive, assume UTC (common for OBS/Gitea if not specified)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=datetime.timezone.utc)
+            logging.error(f"Timestamp is missing timezone information: {ts_str}")
+            return "Unknown"
 
         # Convert to target timezone
         dt_localized = dt.astimezone(REPORT_TIMEZONE)
 
         return dt_localized.strftime("%Y-%m-%d %H:%M")
     except ValueError:
-        return ts_str
+        logging.error(f"Invalid timestamp format: {ts_str}")
+        return "Unknown"
