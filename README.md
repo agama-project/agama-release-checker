@@ -46,3 +46,8 @@ Then install dependencies with:
 
     uv pip install --python python3.11 '.[test]'
 
+### Source (Annotated)
+
+- Git repository at GitHub: <https://github.com/mvidner/agama-release-checker>
+- Annotated source code: New to Python? Hover over names for documentation,
+  click for reference links: <https://agama-release-checker-annotated.surge.sh/>
