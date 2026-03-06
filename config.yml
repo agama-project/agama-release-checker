@@ -7,18 +7,9 @@ repositories:
   type: git
   name: agama-integration-tests
 
-- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.1:/TEST/product/iso/
-  internal: true
-  type: mirrorcache
-  name: sles-16.1-test-iso
-  files:
-    - SLES-16.1-Online-x86_64-*.iso
-
-- url: https://download.opensuse.org/repositories/systemsmanagement:/Agama:/Release/images/iso/
-  type: mirrorcache
-  name: obs-sm-A-Release-iso
-  files:
-    - agama-installer.x86_64-*-Build*.iso
+- url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel
+  type: obs
+  name: obs-sm-A-Devel
 
 - url: https://download.opensuse.org/repositories/systemsmanagement:/Agama:/Devel/images/iso/
   type: mirrorcache
@@ -26,13 +17,15 @@ repositories:
   files:
     - agama-installer.x86_64-*-Build*.iso
 
-- url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel
-  type: obs
-  name: obs-sm-A-Devel
-
 - url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Release
   type: obs
   name: obs-sm-A-Release
+
+- url: https://download.opensuse.org/repositories/systemsmanagement:/Agama:/Release/images/iso/
+  type: mirrorcache
+  name: obs-sm-A-Release-iso
+  files:
+    - agama-installer.x86_64-*-Build*.iso
 
 - url: https://build.opensuse.org/project/show/openSUSE:Factory
   type: obs
@@ -44,6 +37,13 @@ repositories:
   internal: true
   branch: slfo-main
   name: ibs-pool
+
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.1:/TEST/product/iso/
+  internal: true
+  type: mirrorcache
+  name: sles-16.1-test-iso
+  files:
+    - SLES-16.1-Online-x86_64-*.iso
 
 - url: https://src.suse.de/pool/
   type: gitea
