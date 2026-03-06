@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from agama_release_checker.models import ObsConfig, ObsRequest
-from agama_release_checker.reporting import print_markdown_table
+from agama_release_checker.reporting import print_markdown_table, LinkManager
 from agama_release_checker.utils import CACHE_DIR, format_timestamp
 from agama_release_checker.caching import run_cached_command
 
@@ -158,7 +158,7 @@ class ObsRequestsReport:
 
         return None, requests
 
-    def render(self, requests: list[ObsRequest]) -> None:
+    def render(self, requests: list[ObsRequest], link_manager: LinkManager) -> None:
         """Renders the OBS submit requests report as markdown."""
         print(f"\n## OBS Submit Requests: {self.config.name}\n")
         print(f"Project: {self.config.url}\n")
@@ -167,7 +167,7 @@ class ObsRequestsReport:
             print("  (No pending requests found)")
             return
 
-        headers = ["Updated", "Created", "ID", "State", "Source", "Target"]
+        headers = ["Updated", "ID", "State", "Source", "Target"]
         rows: list[list[str]] = []
         for req in requests:
             source = f"{req.source_project}/{req.source_package}"
@@ -175,8 +175,7 @@ class ObsRequestsReport:
             rows.append(
                 [
                     format_timestamp(req.updated_at),
-                    format_timestamp(req.created_at),
-                    req.id,
+                    link_manager.register_obs_request(self.config, req.id),
                     req.state,
                     source,
                     target,

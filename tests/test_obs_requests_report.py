@@ -5,6 +5,7 @@ from datetime import datetime
 
 from agama_release_checker.reports.obs_requests_report import ObsRequestsReport
 from agama_release_checker.models import ObsConfig, ObsRequest
+from agama_release_checker.reporting import LinkManager
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -136,9 +137,10 @@ def test_obs_requests_report_sorting(capsys):
     )
 
     config = ObsConfig(url="http://obs/", name="obs")
+    lm = LinkManager([])
     report = ObsRequestsReport(config, {})
     # render sorts by the first column (Updated) descending
-    report.render([req1, req2])
+    report.render([req1, req2], lm)
 
     captured = capsys.readouterr()
     lines = [line.strip() for line in captured.out.splitlines() if "|" in line]
@@ -146,3 +148,8 @@ def test_obs_requests_report_sorting(capsys):
     # Sorting: newest first (2024-02-01)
     assert "2024-02-01" in lines[2]
     assert "2024-01-01" in lines[3]
+    # Check that ID is formatted as a reference link
+    assert "[2][]" in lines[2]
+    assert "[1][]" in lines[3]
+    # Check that 'Created' is NOT in the header
+    assert "Created" not in lines[0]

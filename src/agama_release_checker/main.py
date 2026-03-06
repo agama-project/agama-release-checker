@@ -240,7 +240,7 @@ def main() -> None:
         for pr_rpt, pr_list in gitea_pr_results:
             pr_rpt.render(pr_list)
         for rq_rpt, rq_list in obs_requests_results:
-            rq_rpt.render(rq_list)
+            rq_rpt.render(rq_list, link_manager=link_manager)
 
         link_manager.print_definitions()
 

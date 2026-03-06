@@ -105,6 +105,8 @@ class GiteaRequestsReport:
         print(f"\n## Gitea Pull Requests: {self.config.name}\n")
         print(f"URL: {self.config.url}\n")
 
+        # Note: Index numbers may collide across different repository paths;
+        # each link points to the specific repository.
         if not prs:
             print("  (No matching pull requests found)")
             return

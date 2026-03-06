@@ -1,7 +1,7 @@
 import logging
 import re
 from collections.abc import Sequence
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import fnmatch
 
 from .models import (
@@ -10,6 +10,7 @@ from .models import (
     SourcePackage,
     GitTimestamp,
     GitRevisionTimestamps,
+    ObsConfig,
 )
 
 Package = BinaryPackage | SourcePackage
@@ -79,7 +80,7 @@ def print_markdown_table(headers: list[str], rows: list[list[str]]) -> None:
 
 
 class LinkManager:
-    """Manages markdown reference links for git commits."""
+    """Manages markdown reference links for git commits and OBS requests."""
 
     def __init__(self, git_configs: Sequence[GitConfig]) -> None:
         self.config_map = {cfg.name: cfg for cfg in git_configs}
@@ -101,6 +102,14 @@ class LinkManager:
             self.links[githash] = url
             return f"[{githash}][]"
         return None
+
+    def register_obs_request(self, config: ObsConfig, req_id: str) -> str:
+        """Registers an OBS request and returns its reference link."""
+        parsed = urlparse(config.url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        url = f"{base_url}/requests/{req_id}"
+        self.links[req_id] = url
+        return f"[{req_id}][]"
 
     def format_version(self, source_rpm: str, version: str) -> str:
         """Formats a version string, replacing a trailing git hash with a reference link.
