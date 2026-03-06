@@ -15,12 +15,10 @@ class ObsRequestsReport:
         config: ObsConfig,
         binary_patterns_by_source: dict[str, list[str]],
         no_cache: bool = False,
-        recent_requests: bool = False,
     ):
         self.config = config
         self.binary_patterns_by_source = binary_patterns_by_source
         self.no_cache = no_cache
-        self.recent_requests = recent_requests
 
     def _get_project_name(self) -> str:
         # Handle cases where URL might end with slash
@@ -57,88 +55,94 @@ class ObsRequestsReport:
         if not self._run_osc_command(["osc", "version"])[0]:
             return None, None
 
-        requests: list[ObsRequest] = []
+        requests_by_id: dict[str, ObsRequest] = {}
 
         # Iterate over all defined source packages
         for package_name in self.binary_patterns_by_source.keys():
-            if self.recent_requests:
-                cutoff_date = (datetime.now() - timedelta(weeks=2)).strftime("%Y-%m-%d")
-                query = (
-                    f"state/@when>'{cutoff_date}'"
-                    f"+and+action/target/@project='{project}'"
-                    f"+and+action/target/@package='{package_name}'"
-                )
-            else:
-                # Construct API query for "new", "review", "declined" requests
-                query = (
-                    f"(state/@name='new'+or+state/@name='review'+or+state/@name='declined')"
-                    f"+and+action/target/@project='{project}'"
-                    f"+and+action/target/@package='{package_name}'"
-                )
+            # Construct queries
+            # 1. "new", "review", "declined" requests
+            regular_query = (
+                f"(state/@name='new'+or+state/@name='review'+or+state/@name='declined')"
+                f"+and+action/target/@project='{project}'"
+                f"+and+action/target/@package='{package_name}'"
+            )
+            # 2. Requests of any state modified within the past two weeks
+            cutoff_date = (datetime.now() - timedelta(weeks=2)).strftime("%Y-%m-%d")
+            recent_query = (
+                f"state/@when>'{cutoff_date}'"
+                f"+and+action/target/@project='{project}'"
+                f"+and+action/target/@package='{package_name}'"
+            )
 
-            # osc api expects just the path part for the command, but we need to pass arguments.
-            # However, 'osc api' takes the path as an argument.
-            # cmd = ["osc", "api", f"/search/request?match={query}"]
-            # Wait, 'osc api' documentation or usage: osc api [URL]
-            # When using shell, we quote the URL. Here we pass it as a list item.
+            for query in [regular_query, recent_query]:
+                # The previous 'osc' command wrapper handles executing the list.
+                cmd = ["osc", "api", f"/search/request?match={query}"]
 
-            # The previous 'osc' command wrapper handles executing the list.
-            cmd = ["osc", "api", f"/search/request?match={query}"]
+                success, output = self._run_osc_command(cmd)
+                if not success:
+                    logging.warning(
+                        f"Failed to fetch requests for package {package_name} in {project} with query {query}"
+                    )
+                    continue
 
-            success, output = self._run_osc_command(cmd)
-            if not success:
-                logging.warning(
-                    f"Failed to fetch requests for package {package_name} in {project}"
-                )
-                continue
+                try:
+                    root = ET.fromstring(output)
+                    for req_elem in root.findall("request"):
+                        req_id = req_elem.get("id") or ""
+                        if req_id in requests_by_id:
+                            continue
 
-            try:
-                root = ET.fromstring(output)
-                for req_elem in root.findall("request"):
-                    req_id = req_elem.get("id") or ""
+                        state_elem = req_elem.find("state")
+                        state_name = (
+                            state_elem.get("name")
+                            if state_elem is not None
+                            else "unknown"
+                        ) or "unknown"
+                        # OBS XML API provides naive timestamps, but they are in UTC
+                        created_at = (
+                            state_elem.get("created") if state_elem is not None else ""
+                        ) or ""
+                        if created_at:
+                            created_at += "Z"  # UTC is implied, confirmed by experiment
 
-                    state_elem = req_elem.find("state")
-                    state_name = (
-                        state_elem.get("name") if state_elem is not None else "unknown"
-                    ) or "unknown"
-                    # OBS XML API provides naive timestamps, but they are in UTC
-                    created_at = (
-                        state_elem.get("created") if state_elem is not None else ""
-                    ) or ""
-                    if created_at:
-                        created_at += "Z"  # UTC is implied, confirmed by experiment
+                        # "when" is updated time?
+                        updated_at = (
+                            state_elem.get("when") if state_elem is not None else ""
+                        ) or ""
+                        if updated_at:
+                            updated_at += "Z"  # UTC is implied, confirmed by experiment
 
-                    # "when" is updated time?
-                    updated_at = (
-                        state_elem.get("when") if state_elem is not None else ""
-                    ) or ""
-                    if updated_at:
-                        updated_at += "Z"  # UTC is implied, confirmed by experiment
+                        action_elem = req_elem.find("action")
+                        if action_elem is None:
+                            continue
 
-                    action_elem = req_elem.find("action")
-                    if action_elem is None:
-                        continue
+                        source_elem = action_elem.find("source")
+                        source_project = (
+                            source_elem.get("project")
+                            if source_elem is not None
+                            else ""
+                        ) or ""
+                        source_package = (
+                            source_elem.get("package")
+                            if source_elem is not None
+                            else ""
+                        ) or ""
 
-                    source_elem = action_elem.find("source")
-                    source_project = (
-                        source_elem.get("project") if source_elem is not None else ""
-                    ) or ""
-                    source_package = (
-                        source_elem.get("package") if source_elem is not None else ""
-                    ) or ""
+                        target_elem = action_elem.find("target")
+                        target_project = (
+                            target_elem.get("project")
+                            if target_elem is not None
+                            else ""
+                        ) or ""
+                        target_package = (
+                            target_elem.get("package")
+                            if target_elem is not None
+                            else ""
+                        ) or ""
 
-                    target_elem = action_elem.find("target")
-                    target_project = (
-                        target_elem.get("project") if target_elem is not None else ""
-                    ) or ""
-                    target_package = (
-                        target_elem.get("package") if target_elem is not None else ""
-                    ) or ""
+                        description = req_elem.findtext("description") or ""
 
-                    description = req_elem.findtext("description") or ""
-
-                    requests.append(
-                        ObsRequest(
+                        requests_by_id[req_id] = ObsRequest(
                             id=req_id,
                             state=state_name,
                             source_project=source_project,
@@ -149,14 +153,13 @@ class ObsRequestsReport:
                             updated_at=updated_at,
                             description=description.strip(),
                         )
+
+                except ET.ParseError:
+                    logging.error(
+                        f"Failed to parse XML response for package {package_name}"
                     )
 
-            except ET.ParseError:
-                logging.error(
-                    f"Failed to parse XML response for package {package_name}"
-                )
-
-        return None, requests
+        return None, list(requests_by_id.values())
 
     def render(self, requests: list[ObsRequest], link_manager: LinkManager) -> None:
         """Renders the OBS submit requests report as markdown."""

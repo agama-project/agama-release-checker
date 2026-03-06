@@ -61,11 +61,6 @@ def main() -> None:
         help="Force refresh of cached command results (e.g. osc commands).",
     )
     parser.add_argument(
-        "--recent-rq",
-        action="store_true",
-        help="Show requests of all states modified within the past two weeks.",
-    )
-    parser.add_argument(
         "-i",
         "--internal",
         action="store_true",
@@ -182,7 +177,6 @@ def main() -> None:
                             repo,
                             binary_patterns_by_source,
                             no_cache=args.no_command_cache,
-                            recent_requests=args.recent_rq,
                         )
                         _, requests = requests_report.run()
                         if requests:
