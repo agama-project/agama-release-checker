@@ -17,6 +17,7 @@ def test_main_basic_execution(tmp_path):
     # Mock CLI arguments
     mock_args = MagicMock()
     mock_args.verbose = False
+    mock_args.config = "config.yml"
     mock_args.repo = None
     mock_args.no_command_cache = False
     mock_args.recent_rq = False
@@ -41,7 +42,7 @@ def test_main_basic_execution(tmp_path):
         patch("argparse.ArgumentParser.parse_args", return_value=mock_args),
         patch(
             "agama_release_checker.main.AppConfig.from_file", return_value=mock_config
-        ),
+        ) as mock_from_file,
         patch("agama_release_checker.main.check_command", return_value=True),
         patch(
             "agama_release_checker.main.IsoPackagesReport",
@@ -52,9 +53,39 @@ def test_main_basic_execution(tmp_path):
     ):
         main()
 
+        mock_from_file.assert_called_once_with(Path("config.yml"))
         mock_iso_report_instance.run.assert_called_once()
         mock_iso_report_instance.render.assert_called_once()
         mock_git_report.assert_called_once()
+
+
+def test_main_custom_config(tmp_path):
+    mock_args = MagicMock()
+    mock_args.verbose = False
+    mock_args.config = "custom-config.yml"
+    mock_args.repo = None
+    mock_args.no_command_cache = False
+    mock_args.recent_rq = False
+    mock_args.internal = False
+    mock_args.output = str(tmp_path / "custom-report.md")
+    mock_args.timezone = "Europe/Berlin"
+
+    mock_config = MagicMock(spec=AppConfig)
+    mock_config.repositories = []
+    mock_config.binary_patterns_by_source = {}
+    mock_config.git_configs = []
+
+    with (
+        patch("argparse.ArgumentParser.parse_args", return_value=mock_args),
+        patch(
+            "agama_release_checker.main.AppConfig.from_file", return_value=mock_config
+        ) as mock_from_file,
+        patch("agama_release_checker.main.check_command", return_value=True),
+        patch("agama_release_checker.main.get_git_timestamps"),
+        patch("builtins.open", mock_open()),
+    ):
+        main()
+        mock_from_file.assert_called_once_with(Path("custom-config.yml"))
 
 
 def test_main_with_all_report_types(tmp_path):
@@ -62,6 +93,7 @@ def test_main_with_all_report_types(tmp_path):
 
     mock_args = MagicMock()
     mock_args.verbose = True
+    mock_args.config = "config.yml"
     mock_args.repo = None
     mock_args.no_command_cache = False
     mock_args.recent_rq = True
@@ -111,6 +143,7 @@ def test_main_with_all_report_types(tmp_path):
 def test_main_repo_filtering(tmp_path):
     mock_args = MagicMock()
     mock_args.verbose = False
+    mock_args.config = "config.yml"
     mock_args.repo = ["selected-repo"]
     mock_args.no_command_cache = False
     mock_args.recent_rq = False

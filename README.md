@@ -21,6 +21,7 @@ so that this can be made useful for other teams and projects.
 Run `./agama-release-checker --help` to see all options.
 
 Common options:
+  -c, --config FILE   Specify the configuration file (default: config.yml)
   -o, --output FILE   Specify the output file (default: agama-release-status.md)
   --timezone TZ       Specify the timezone for timestamps (default: Europe/Berlin)
   -v, --verbose       Enable verbose logging

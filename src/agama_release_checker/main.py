@@ -67,6 +67,12 @@ def main() -> None:
         help="Enable processing of internal resources (reachable only by VPN).",
     )
     parser.add_argument(
+        "-c",
+        "--config",
+        default="config.yml",
+        help="Specify the configuration file (default: %(default)s)",
+    )
+    parser.add_argument(
         "-o",
         "--output",
         default="agama-release-status.md",
@@ -92,7 +98,7 @@ def main() -> None:
         return
 
     ensure_dir(CACHE_DIR)
-    config: AppConfig = AppConfig.from_file(Path("config.yml"))
+    config: AppConfig = AppConfig.from_file(Path(args.config))
     link_manager = LinkManager(config.git_configs)
 
     with open(args.output, "w") as f, redirect_stdout(f):
