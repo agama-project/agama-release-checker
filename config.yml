@@ -27,6 +27,10 @@ repositories:
   files:
     - agama-installer.x86_64-*-Build*.iso
 
+- url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Maintenance:SLE-16.0
+  type: obs
+  name: obs-sm-A-Maint160
+
 - url: https://build.opensuse.org/project/show/openSUSE:Factory
   type: obs
   name: obs-factory
