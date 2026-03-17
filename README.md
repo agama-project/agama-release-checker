@@ -36,7 +36,7 @@ GPL-2.0-or-later (like Agama itself)
 Install dependencies with zypper if available:
 
     zypper install python311-pytest python311-pytest-cov python311-requests-mock \
-        python311-PyYAML python311-requests python311-beautifulsoup4 \
+        python311-PyYAML python311-requests \
         python311-mypy python311-black
 
 If zypper is not available, install uv:

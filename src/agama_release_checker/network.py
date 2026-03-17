@@ -2,11 +2,11 @@ import logging
 import subprocess
 import sys
 import time
+import json
 from pathlib import Path
 from urllib.parse import urljoin
 
 import requests  # type: ignore
-from bs4 import BeautifulSoup  # type: ignore
 import fnmatch
 
 from .utils import ensure_dir
@@ -53,18 +53,31 @@ def find_iso_urls(
     logging.info(f"Fetching ISO directory from: {base_url}")
     logging.debug(f"Scraping with patterns: {patterns}")
 
-    content = cached_get(base_url, cache_file)
+    # Use Mirrorcache's ?jsontable for easier parsing
+    if "?" in base_url:
+        json_url = f"{base_url}&jsontable"
+    else:
+        json_url = f"{base_url}?jsontable"
+
+    content = cached_get(json_url, cache_file)
     if content is None:
         return []
 
-    soup = BeautifulSoup(content, "html.parser")
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError as e:
+        logging.error(f"Failed to parse JSON from {json_url}: {e}")
+        return []
+
     iso_urls = []
-    for a_tag in soup.find_all("a", href=True):
-        href = str(a_tag["href"])
-        filename = href.split("/")[-1]
+    # data["data"] contains list of files: {"name": "...", "mtime": ..., "size": ...}
+    for item in data.get("data", []):
+        filename = item.get("name")
+        if not filename:
+            continue
         for pattern in patterns:
             if fnmatch.fnmatch(filename, pattern):
-                iso_urls.append(urljoin(base_url, href))
+                iso_urls.append(urljoin(base_url, filename))
                 break
     logging.debug(f"Found {len(iso_urls)} ISO URLs.")
     return iso_urls

@@ -1,0 +1,184 @@
+{
+  "data": [
+    {
+      "mtime": 1773712921,
+      "name": "agama-installer.aarch64-19.pre.0.0-openSUSE-Build16.23.cdx.json",
+      "size": 508650
+    },
+    {
+      "mtime": 1773712943,
+      "name": "agama-installer.aarch64-19.pre.0.0-openSUSE-Build16.23.iso",
+      "size": 840003584
+    },
+    {
+      "mtime": 1773712946,
+      "name": "agama-installer.aarch64-19.pre.0.0-openSUSE-Build16.23.iso.sha256",
+      "size": 125
+    },
+    {
+      "mtime": 1773712946,
+      "name": "agama-installer.aarch64-19.pre.0.0-openSUSE-Build16.23.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1773712939,
+      "name": "agama-installer.aarch64-19.pre.0.0-openSUSE-Build16.23.spdx.json",
+      "size": 29198070
+    },
+    {
+      "mtime": 1773712943,
+      "name": "agama-installer.aarch64-openSUSE.iso",
+      "size": 840003584
+    },
+    {
+      "mtime": 1773712987,
+      "name": "agama-installer.aarch64-openSUSE.iso.sha256",
+      "size": 103
+    },
+    {
+      "mtime": 1773712988,
+      "name": "agama-installer.aarch64-openSUSE.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1773712939,
+      "name": "agama-installer.aarch64-openSUSE.json",
+      "size": 29198070
+    },
+    {
+      "mtime": 1766450405,
+      "name": "agama-installer.ppc64le-17.0.0-openSUSE-Build17.39.cdx.json",
+      "size": 501143
+    },
+    {
+      "mtime": 1766450411,
+      "name": "agama-installer.ppc64le-17.0.0-openSUSE-Build17.39.iso",
+      "size": 644022272
+    },
+    {
+      "mtime": 1766450414,
+      "name": "agama-installer.ppc64le-17.0.0-openSUSE-Build17.39.iso.sha256",
+      "size": 121
+    },
+    {
+      "mtime": 1766450414,
+      "name": "agama-installer.ppc64le-17.0.0-openSUSE-Build17.39.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1766450405,
+      "name": "agama-installer.ppc64le-17.0.0-openSUSE-Build17.39.spdx.json",
+      "size": 25991365
+    },
+    {
+      "mtime": 1766450411,
+      "name": "agama-installer.ppc64le-openSUSE.iso",
+      "size": 644022272
+    },
+    {
+      "mtime": 1773712987,
+      "name": "agama-installer.ppc64le-openSUSE.iso.sha256",
+      "size": 103
+    },
+    {
+      "mtime": 1773712987,
+      "name": "agama-installer.ppc64le-openSUSE.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1766450405,
+      "name": "agama-installer.ppc64le-openSUSE.json",
+      "size": 25991365
+    },
+    {
+      "mtime": 1771388516,
+      "name": "agama-installer.s390x-19.pre.0.0-openSUSE-Build13.10.cdx.json",
+      "size": 499427
+    },
+    {
+      "mtime": 1771388668,
+      "name": "agama-installer.s390x-19.pre.0.0-openSUSE-Build13.10.iso",
+      "size": 596082688
+    },
+    {
+      "mtime": 1771388671,
+      "name": "agama-installer.s390x-19.pre.0.0-openSUSE-Build13.10.iso.sha256",
+      "size": 123
+    },
+    {
+      "mtime": 1771388671,
+      "name": "agama-installer.s390x-19.pre.0.0-openSUSE-Build13.10.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1771388667,
+      "name": "agama-installer.s390x-19.pre.0.0-openSUSE-Build13.10.spdx.json",
+      "size": 25967044
+    },
+    {
+      "mtime": 1771388668,
+      "name": "agama-installer.s390x-openSUSE.iso",
+      "size": 596082688
+    },
+    {
+      "mtime": 1773712988,
+      "name": "agama-installer.s390x-openSUSE.iso.sha256",
+      "size": 101
+    },
+    {
+      "mtime": 1773712988,
+      "name": "agama-installer.s390x-openSUSE.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1771388667,
+      "name": "agama-installer.s390x-openSUSE.json",
+      "size": 25967044
+    },
+    {
+      "mtime": 1773712430,
+      "name": "agama-installer.x86_64-19.pre.0.0-openSUSE-Build16.23.cdx.json",
+      "size": 510384
+    },
+    {
+      "mtime": 1773712461,
+      "name": "agama-installer.x86_64-19.pre.0.0-openSUSE-Build16.23.iso",
+      "size": 854738944
+    },
+    {
+      "mtime": 1773712465,
+      "name": "agama-installer.x86_64-19.pre.0.0-openSUSE-Build16.23.iso.sha256",
+      "size": 124
+    },
+    {
+      "mtime": 1773712465,
+      "name": "agama-installer.x86_64-19.pre.0.0-openSUSE-Build16.23.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1773712456,
+      "name": "agama-installer.x86_64-19.pre.0.0-openSUSE-Build16.23.spdx.json",
+      "size": 28917886
+    },
+    {
+      "mtime": 1773712461,
+      "name": "agama-installer.x86_64-openSUSE.iso",
+      "size": 854738944
+    },
+    {
+      "mtime": 1773712987,
+      "name": "agama-installer.x86_64-openSUSE.iso.sha256",
+      "size": 102
+    },
+    {
+      "mtime": 1773712987,
+      "name": "agama-installer.x86_64-openSUSE.iso.sha256.asc",
+      "size": 481
+    },
+    {
+      "mtime": 1773712456,
+      "name": "agama-installer.x86_64-openSUSE.json",
+      "size": 28917886
+    }
+  ]
+}
