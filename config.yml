@@ -31,6 +31,12 @@ repositories:
   type: obs
   name: obs-sm-A-Maint160
 
+# We don't do PRs here now
+#- url: https://src.opensuse.org/pool/
+#  type: gitea
+#  branch: factory
+#  name: obs-pool
+
 - url: https://build.opensuse.org/project/show/openSUSE:Factory
   type: obs
   name: obs-factory
