@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/env PYTHONPATH=src python3.11 -m agama_release_checker.maker "$@"

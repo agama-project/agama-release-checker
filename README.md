@@ -18,6 +18,8 @@ so that this can be made useful for other teams and projects.
 
 ### Usage
 
+#### Release Checker
+
 Run `./agama-release-checker --help` to see all options.
 
 Common options:
@@ -26,6 +28,14 @@ Common options:
   --timezone TZ       Specify the timezone for timestamps (default: Europe/Berlin)
   -v, --verbose       Enable verbose logging
   -r, --repo REPO     Process only the specified repository (can be repeated)
+
+#### Release Maker
+
+Run `./agama-release-maker --help` to see all options and subcommands.
+
+Subcommands:
+- `obs-submit SOURCE TARGET`: Submits packages from SOURCE OBS project to TARGET project.
+- `gitea-submit SOURCE ORG BRANCH`: Syncs OBS SOURCE project to Gitea ORG on BRANCH and creates pull requests.
 
 ### License
 

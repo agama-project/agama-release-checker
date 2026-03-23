@@ -144,7 +144,8 @@ class AppConfig:
     """Top-level application configuration loaded from config.yml."""
 
     repositories: list[RepositoryConfig]
-    binary_patterns_by_source: dict[str, list[str]]
+    obs_packages: list[str] = field(default_factory=list)
+    binary_patterns_by_source: dict[str, list[str]] = field(default_factory=dict)
     spec_names_by_package: dict[str, list[str]] = field(default_factory=dict)
 
     @classmethod

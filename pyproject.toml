@@ -24,6 +24,7 @@ test = [
 
 [project.scripts]
 agama-release-checker = "agama_release_checker.main:main"
+agama-release-maker = "agama_release_checker.maker:main"
 
 [tool.hatch.build.targets.wheel]
 sources = ["src"]

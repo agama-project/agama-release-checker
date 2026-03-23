@@ -3,8 +3,10 @@ needs to be refined at one point.
 
 Make agama-release-maker, a Python script, to
 
-- [ ] submit $PACKAGES from systemsmanagement:Agama:Release to obs://home:mvidner:FakeFactory
-- [ ] submit $PACKAGES from Devel:Yast:Agama:Release to Gitea mvidner:fake-slfo
+- [x] submit $PACKAGES from systemsmanagement:Agama:Release to obs://home:mvidner:FakeFactory
+- [x] submit $PACKAGES from Devel:Yast:Agama:Release to Gitea mvidner:fake-slfo
+
+(Done by implementing `agama-release-maker` script with `obs-submit` and `gitea-submit` commands)
 
 Then,
 
