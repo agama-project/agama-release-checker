@@ -24,7 +24,16 @@ def test_submit_to_obs(mock_run, mock_config):
 
     assert mock_run.call_count == 2
     mock_run.assert_any_call(
-        ["osc", "sr", "source_proj", "pkg1", "target_proj"],
+        [
+            "osc",
+            "sr",
+            "--yes",
+            "-m",
+            "Automatic update from source_proj",
+            "source_proj",
+            "pkg1",
+            "target_proj",
+        ],
         check=True,
         capture_output=True,
         text=True,

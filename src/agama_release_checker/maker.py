@@ -31,7 +31,16 @@ class ReleaseMaker:
         """Submit all configured packages from source to target OBS project."""
         for pkg in self.config.obs_packages:
             logging.info(f"Submitting {pkg} from {source_project} to {target_project}")
-            cmd = ["osc", "sr", source_project, pkg, target_project]
+            cmd = [
+                "osc",
+                "sr",
+                "--yes",
+                "-m",
+                f"Automatic update from {source_project}",
+                source_project,
+                pkg,
+                target_project,
+            ]
             try:
                 self._run_command(cmd)
             except subprocess.CalledProcessError as e:
