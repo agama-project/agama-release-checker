@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,19 +16,38 @@ else:
 
 
 class ReleaseMaker:
-    """Handles submitting packages to OBS and Gitea."""
+    """Handles submitting packages to OBS and Gitea.
+
+    This class provides methods to automate the submission of multiple
+    packages between OBS projects or from OBS to Gitea repositories,
+    including synchronization and PR creation.
+    """
 
     def __init__(self, config: "AppConfig"):
+        """Initializes the ReleaseMaker with the given application configuration."""
         self.config = config
 
     def _run_command(
         self, cmd: list[str], cwd: Path | None = None
     ) -> subprocess.CompletedProcess:
-        """Runs a command and returns the completed process."""
-        logging.info(f"Running command: {' '.join(cmd)} in {cwd or '.'}")
-        return subprocess.run(cmd, check=True, capture_output=True, text=True, cwd=cwd)
+        """Runs a command and returns the completed process.
 
-    def submit_to_obs(self, source_project: str, target_project: str):
+        Captures and logs stdout and stderr on failure for easier debugging.
+        """
+        logging.info(f"Running command: {' '.join(cmd)} in {cwd or '.'}")
+        try:
+            return subprocess.run(
+                cmd, check=True, capture_output=True, text=True, cwd=cwd
+            )
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Command failed: {' '.join(cmd)}")
+            if e.stdout:
+                logging.error(f"STDOUT: {e.stdout.strip()}")
+            if e.stderr:
+                logging.error(f"STDERR: {e.stderr.strip()}")
+            raise
+
+    def submit_to_obs(self, source_project: str, target_project: str) -> None:
         """Submit all configured packages from source to target OBS project."""
         for pkg in self.config.obs_packages:
             logging.info(f"Submitting {pkg} from {source_project} to {target_project}")
@@ -47,21 +67,36 @@ class ReleaseMaker:
                 logging.error(f"Failed to submit {pkg}: {e.stderr.strip()}")
                 raise
 
-    def submit_to_gitea(self, source_project: str, target_org: str, target_branch: str):
-        """Submit all configured packages from source OBS to Gitea."""
+    def submit_to_gitea(
+        self,
+        source_project: str,
+        target_org: str,
+        target_branch: str,
+        obs_api: str = "https://api.suse.de",
+        gitea_host: str = "src.suse.de",
+    ) -> None:
+        """Submit all configured packages from source OBS to Gitea.
+
+        Checks out source from OBS (defaulting to IBS), clones the target Gitea repo,
+        syncs files, and creates or updates a pull request.
+        """
         for pkg in self.config.obs_packages:
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir)
 
                 # 1. Checkout from OBS
                 logging.info(f"Checking out {pkg} from OBS {source_project}")
-                self._run_command(["osc", "co", source_project, pkg], cwd=tmp_path)
+                co_cmd = ["osc"]
+                if obs_api:
+                    co_cmd.extend(["-A", obs_api])
+                co_cmd.extend(["co", source_project, pkg])
+                self._run_command(co_cmd, cwd=tmp_path)
                 obs_pkg_dir = tmp_path / source_project / pkg
 
                 # 2. Clone from Gitea
                 # Use a generic URL or try to determine it.
-                # Assuming gitea@src.opensuse.org:ORG/REPO.git
-                gitea_remote = f"gitea@src.opensuse.org:{target_org}/{pkg}.git"
+                # Assuming gitea@HOST:ORG/REPO.git
+                gitea_remote = f"gitea@{gitea_host}:{target_org}/{pkg}.git"
                 git_repo_dir = tmp_path / f"{pkg}-git"
                 logging.info(f"Cloning {pkg} from Gitea {gitea_remote}")
                 self._run_command(["git", "clone", gitea_remote, str(git_repo_dir)])
@@ -113,25 +148,59 @@ class ReleaseMaker:
 
                 # 6. Create PR using tea
                 logging.info(f"Creating PR for {pkg} in {target_org}/{pkg}")
-                pr_cmd = [
+                # Check for existing PR first
+                check_pr_cmd = [
                     "tea",
                     "pr",
-                    "create",
+                    "list",
                     "--repo",
                     f"{target_org}/{pkg}",
-                    "--base",
-                    target_branch,
-                    "--head",
-                    branch_name,
-                    "--title",
-                    f"Update from OBS {source_project}",
-                    "--description",
-                    f"Automatic update from {source_project}",
+                    "--state",
+                    "open",
+                    "-f",
+                    "index,title,state,author,milestone,updated,labels,head,base,url",
+                    "--output",
+                    "json",
                 ]
-                self._run_command(pr_cmd)
+
+                try:
+                    res = self._run_command(check_pr_cmd)
+                    all_prs = json.loads(res.stdout)
+                    # Filter manually as tea doesn't support head/base filtering
+                    existing_prs = [
+                        pr
+                        for pr in all_prs
+                        if pr.get("head") == branch_name
+                        and pr.get("base") == target_branch
+                    ]
+                    if existing_prs:
+                        logging.info(
+                            f"Pull request already exists for {pkg}: {existing_prs[0].get('url')}"
+                        )
+                    else:
+                        pr_cmd = [
+                            "tea",
+                            "pr",
+                            "create",
+                            "--repo",
+                            f"{target_org}/{pkg}",
+                            "--base",
+                            target_branch,
+                            "--head",
+                            branch_name,
+                            "--title",
+                            f"Update from OBS {source_project}",
+                            "--description",
+                            f"Automatic update from {source_project}",
+                        ]
+                        self._run_command(pr_cmd)
+                except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
+                    logging.error(f"Failed to check or create PR for {pkg}: {e}")
+                    raise
 
 
-def main():
+def main() -> None:
+    """Main entry point for the agama-release-maker script."""
     parser = argparse.ArgumentParser(
         description="Automates package submissions for Agama releases."
     )
