@@ -4,20 +4,30 @@ import subprocess
 from unittest.mock import patch, MagicMock, ANY
 from agama_release_checker.maker import ReleaseMaker
 from agama_release_checker.models import (
-    AppConfig,
+    MakerConfig,
     PackageSubmissionConfig,
     GiteaSubmitStrategy,
+    ObsSubmissionsConfig,
+    GiteaSubmissionsConfig,
 )
 
 
 @pytest.fixture
 def mock_config():
-    """Provides a mock AppConfig with test packages."""
-    config = MagicMock(spec=AppConfig)
+    """Provides a mock MakerConfig with test packages."""
+    config = MagicMock(spec=MakerConfig)
     config.package_submissions = {
         "pkg1": PackageSubmissionConfig(),
         "pkg2": PackageSubmissionConfig(),
     }
+    config.obs_submissions = ObsSubmissionsConfig(
+        source_project="source_proj", target_project="target_proj"
+    )
+    config.gitea_submissions = GiteaSubmissionsConfig(
+        source_project="source_proj",
+        target_org="target_org",
+        target_branch="target_branch",
+    )
     return config
 
 
@@ -27,7 +37,7 @@ def test_submit_to_obs(mock_run, mock_config):
     mock_run.return_value = MagicMock(returncode=0, stdout="OK", stderr="")
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_obs("source_proj", "target_proj")
+    maker.submit_to_obs()
 
     assert mock_run.call_count == 2
     mock_run.assert_any_call(
@@ -61,7 +71,7 @@ def test_submit_to_obs_no_changes(mock_run, mock_config):
 
     maker = ReleaseMaker(mock_config)
     # This should NOT raise an exception
-    maker.submit_to_obs("source_proj", "target_proj")
+    maker.submit_to_obs()
 
     assert mock_run.call_count == 2
 
@@ -89,7 +99,7 @@ def test_submit_to_gitea(
     mock_iterdir.return_value = []
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea("source_proj", "target_org", "target_branch")
+    maker.submit_to_gitea()
 
     # For each package (2 packages):
     # 1. osc co (with -A)
@@ -174,7 +184,7 @@ def test_submit_to_gitea_existing_pr(
     mock_iterdir.return_value = []
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea("source_proj", "target_org", "target_branch")
+    maker.submit_to_gitea()
 
     # Verify that tea pr create was NOT called
     for call in mock_run.call_args_list:
@@ -192,6 +202,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         source_dir="dist",
         target_repo="https://gitea.example.com/org/target",
         target_dir="subdir",
+        target_branch="custom_branch",
     )
     mock_config.package_submissions = {
         "custom-pkg": PackageSubmissionConfig(gitea_submit=strategy)
@@ -207,7 +218,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
     mock_run.side_effect = run_side_effect
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea("source_proj", "target_org", "target_branch")
+    maker.submit_to_gitea()
 
     # 1. git clone source
     # 2. make build
@@ -250,9 +261,9 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
             "--repo",
             "org/target",
             "--base",
-            "target_branch",
+            "custom_branch",
             "--head",
-            "target_branch-update-custom-pkg",
+            "custom_branch-update-custom-pkg",
             "--title",
             "Update custom-pkg from source_proj",
             "--description",

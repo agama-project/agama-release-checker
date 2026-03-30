@@ -155,6 +155,7 @@ class GiteaSubmitStrategy:
     source_dir: str
     target_repo: str
     target_dir: str
+    target_branch: str | None = None
 
 
 @dataclass
@@ -167,8 +168,59 @@ class PackageSubmissionConfig:
     def from_dict(cls, d: dict[str, Any]) -> "PackageSubmissionConfig":
         d = dict(d)
         if "gitea_submit" in d and isinstance(d["gitea_submit"], dict):
-            d["gitea_submit"] = GiteaSubmitStrategy(**d["gitea_submit"])
+            # Pass only known fields to GiteaSubmitStrategy
+            known = {f.name for f in GiteaSubmitStrategy.__dataclass_fields__.values()}
+            strat_data = {k: v for k, v in d["gitea_submit"].items() if k in known}
+            d["gitea_submit"] = GiteaSubmitStrategy(**strat_data)
         return cls(**d)
+
+
+@dataclass
+class ObsSubmissionsConfig:
+    """Default source and target projects for OBS submissions."""
+
+    source_project: str
+    target_project: str
+
+
+@dataclass
+class GiteaSubmissionsConfig:
+    """Default source project, target org and branch for Gitea submissions."""
+
+    source_project: str
+    target_org: str
+    target_branch: str
+
+
+@dataclass
+class MakerConfig:
+    """Configuration for agama-release-maker."""
+
+    package_submissions: dict[str, PackageSubmissionConfig]
+    obs_submissions: ObsSubmissionsConfig
+    gitea_submissions: GiteaSubmissionsConfig
+
+    @classmethod
+    def from_file(cls, config_path: Path) -> "MakerConfig":
+        """Loads and returns the YAML configuration from the given path."""
+        with open(config_path, "r") as f:
+            data = yaml.safe_load(f)
+
+        if "package_submissions" in data:
+            data["package_submissions"] = {
+                k: PackageSubmissionConfig.from_dict(v or {})
+                for k, v in data["package_submissions"].items()
+            }
+
+        if "obs_submissions" in data:
+            data["obs_submissions"] = ObsSubmissionsConfig(**data["obs_submissions"])
+
+        if "gitea_submissions" in data:
+            data["gitea_submissions"] = GiteaSubmissionsConfig(
+                **data["gitea_submissions"]
+            )
+
+        return cls(**data)
 
 
 @dataclass

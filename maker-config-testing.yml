@@ -1,0 +1,24 @@
+package_submissions:
+# these 4 produce RPMs, from the main git repo
+  agama: {}
+  agama-products: {}
+  agama-web-ui: {}
+  rubygem-agama-yast: {}
+# also from the main repo, but produces an ISO
+  agama-installer:
+    gitea_submit:
+      source_repo: "https://github.com/agama-project/agama/"
+      source_run: "make -C live clean sles"
+      source_dir: "live/dist"
+      target_repo: "https://src.suse.de/products/SLES"
+      target_dir: "agama-installer-SLES"
+      target_branch: "fake-16.1"
+
+obs_submissions:
+  source_project: "systemsmanagement:Agama:Release"
+  target_project: "home:mvidner:FakeFactory"
+
+gitea_submissions:
+  source_project: "Devel:Yast:Agama:Release"
+  target_org: mvidner
+  target_branch: fake-slfo-main
