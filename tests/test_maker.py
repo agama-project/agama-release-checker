@@ -1,5 +1,6 @@
 import pytest
 import json
+import subprocess
 from unittest.mock import patch, MagicMock, ANY
 from agama_release_checker.maker import ReleaseMaker
 from agama_release_checker.models import (
@@ -45,6 +46,24 @@ def test_submit_to_obs(mock_run, mock_config):
         text=True,
         cwd=None,
     )
+
+
+@patch("agama_release_checker.maker.subprocess.run")
+def test_submit_to_obs_no_changes(mock_run, mock_config):
+    """Verifies that submit_to_obs handles the 'no actions' error gracefully."""
+    # Simulate the osc 400 error for no actions
+    mock_run.side_effect = subprocess.CalledProcessError(
+        1,
+        ["osc", "sr"],
+        output="",
+        stderr="Server returned an error: HTTP Error 400: Bad Request\nThe request contains no actions. Submit requests without source changes may have skipped!",
+    )
+
+    maker = ReleaseMaker(mock_config)
+    # This should NOT raise an exception
+    maker.submit_to_obs("source_proj", "target_proj")
+
+    assert mock_run.call_count == 2
 
 
 @patch("agama_release_checker.maker.Path.iterdir")

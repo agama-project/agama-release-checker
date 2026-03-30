@@ -68,8 +68,11 @@ class ReleaseMaker:
             try:
                 self._run_command(cmd)
             except subprocess.CalledProcessError as e:
-                logging.error(f"Failed to submit {pkg}: {e.stderr.strip()}")
-                raise
+                if "The request contains no actions" in e.stderr:
+                    logging.warning(f"No changes to submit for {pkg}")
+                else:
+                    logging.error(f"Failed to submit {pkg}: {e.stderr.strip()}")
+                    raise
 
     def _submit_to_gitea_custom(
         self,
