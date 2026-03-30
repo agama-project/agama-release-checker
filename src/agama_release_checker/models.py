@@ -156,12 +156,12 @@ class GiteaSubmitStrategy:
     target_repo: str
     target_dir: str
     target_branch: str | None = None
+    fork_org: str | None = None
 
 
 @dataclass
 class PackageSubmissionConfig:
-    """Submission configuration for a specific package."""
-
+    # ... (no change to from_dict needed as it already filters by known fields)
     gitea_submit: GiteaSubmitStrategy | None = None
 
     @classmethod
@@ -190,6 +190,7 @@ class GiteaSubmissionsConfig:
     source_project: str
     target_org: str
     target_branch: str
+    fork_org: str | None = None
 
 
 @dataclass

@@ -15,4 +15,4 @@ Then,
 With that, and having tested on the fake repos, add the production repos to agama-release-maker:
 
 - [ ] submit $PACKAGES from systemsmanagement:Agama:Release to obs://openSUSE:Factory
-- [ ] submit $PACKAGES from Devel:Yast:Agama:Release to Gitea pool:slfo
+- [ ] submit $PACKAGES from Devel:YaST:Agama:Release to Gitea pool:slfo
