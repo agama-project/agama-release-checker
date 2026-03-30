@@ -138,7 +138,63 @@ def test_submit_to_gitea(
             "--base",
             "target_branch",
             "--head",
-            "target_branch-update",
+            "target_org:target_branch-update",
+            "--title",
+            "Update from OBS source_proj",
+            "--description",
+            "Automatic update from source_proj",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=ANY,
+    )
+
+
+@patch("agama_release_checker.maker.Path.iterdir")
+@patch("agama_release_checker.maker.shutil.copytree")
+@patch("agama_release_checker.maker.shutil.copy2")
+@patch("agama_release_checker.maker.subprocess.run")
+def test_submit_to_gitea_fork(
+    mock_run, mock_copy2, mock_copytree, mock_iterdir, mock_config
+):
+    """Verifies that submit_to_gitea pushes to a fork if fork_org is provided."""
+    mock_config.gitea_submissions.fork_org = "fork_org"
+
+    def run_side_effect(cmd, **kwargs):
+        if "status" in cmd:
+            return MagicMock(returncode=0, stdout="M  file", stderr="")
+        if "pr" in cmd and "list" in cmd:
+            return MagicMock(returncode=0, stdout="[]", stderr="")
+        return MagicMock(returncode=0, stdout="OK", stderr="")
+
+    mock_run.side_effect = run_side_effect
+    mock_iterdir.return_value = []
+
+    maker = ReleaseMaker(mock_config)
+    maker.submit_to_gitea()
+
+    # Verify push to fork
+    mock_run.assert_any_call(
+        ["git", "push", "fork", "target_branch-update", "--force"],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=ANY,
+    )
+
+    # Verify PR creation with fork head
+    mock_run.assert_any_call(
+        [
+            "tea",
+            "pr",
+            "create",
+            "--repo",
+            "target_org/pkg1",
+            "--base",
+            "target_branch",
+            "--head",
+            "fork_org:target_branch-update",
             "--title",
             "Update from OBS source_proj",
             "--description",
@@ -170,7 +226,7 @@ def test_submit_to_gitea_existing_pr(
                 stdout=json.dumps(
                     [
                         {
-                            "head": "target_branch-update",
+                            "head": "target_org:target_branch-update",
                             "base": "target_branch",
                             "url": "http://example.com/pr/1",
                         }
@@ -200,7 +256,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         source_repo="https://github.com/org/repo",
         source_run="make build",
         source_dir="dist",
-        target_repo="https://gitea.example.com/org/target",
+        target_repo="gitea@gitea.example.com:target_owner/target_repo.git",
         target_dir="subdir",
         target_branch="custom_branch",
     )
@@ -247,7 +303,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         cwd=ANY,
     )
     mock_run.assert_any_call(
-        ["git", "clone", "https://gitea.example.com/org/target", ANY],
+        ["git", "clone", "gitea@gitea.example.com:target_owner/target_repo.git", ANY],
         check=True,
         capture_output=True,
         text=True,
@@ -259,11 +315,11 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
             "pr",
             "create",
             "--repo",
-            "org/target",
+            "target_owner/target_repo",
             "--base",
             "custom_branch",
             "--head",
-            "custom_branch-update-custom-pkg",
+            "target_owner:custom_branch-update-custom-pkg",
             "--title",
             "Update custom-pkg from source_proj",
             "--description",
