@@ -122,7 +122,14 @@ def test_submit_to_gitea(
         cwd=ANY,
     )
     mock_run.assert_any_call(
-        ["git", "clone", "gitea@src.suse.de:target_org/pkg1.git", ANY],
+        [
+            "git",
+            "clone",
+            "--branch",
+            "target_branch",
+            "gitea@src.suse.de:target_org/pkg1.git",
+            ANY,
+        ],
         check=True,
         capture_output=True,
         text=True,
@@ -303,7 +310,14 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         cwd=ANY,
     )
     mock_run.assert_any_call(
-        ["git", "clone", "gitea@gitea.example.com:target_owner/target_repo.git", ANY],
+        [
+            "git",
+            "clone",
+            "--branch",
+            "custom_branch",
+            "gitea@gitea.example.com:target_owner/target_repo.git",
+            ANY,
+        ],
         check=True,
         capture_output=True,
         text=True,

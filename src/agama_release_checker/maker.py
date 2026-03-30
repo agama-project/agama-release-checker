@@ -124,9 +124,18 @@ class ReleaseMaker:
 
             # 3. Clone target repo
             target_repo_dir = tmp_path / f"{pkg}-target"
-            logging.info(f"Cloning target repo {strategy.target_repo}")
+            logging.info(
+                f"Cloning target repo {strategy.target_repo} (branch {target_branch})"
+            )
             self._run_command(
-                ["git", "clone", strategy.target_repo, str(target_repo_dir)]
+                [
+                    "git",
+                    "clone",
+                    "--branch",
+                    target_branch,
+                    strategy.target_repo,
+                    str(target_repo_dir),
+                ]
             )
 
             # 4. Handle Fork
@@ -277,8 +286,19 @@ class ReleaseMaker:
                 # 2. Clone from Gitea
                 gitea_remote = f"gitea@{gitea_host}:{target_org}/{pkg}.git"
                 git_repo_dir = tmp_path / f"{pkg}-git"
-                logging.info(f"Cloning {pkg} from Gitea {gitea_remote}")
-                self._run_command(["git", "clone", gitea_remote, str(git_repo_dir)])
+                logging.info(
+                    f"Cloning {pkg} from Gitea {gitea_remote} (branch {target_branch})"
+                )
+                self._run_command(
+                    [
+                        "git",
+                        "clone",
+                        "--branch",
+                        target_branch,
+                        gitea_remote,
+                        str(git_repo_dir),
+                    ]
+                )
 
                 # 3. Handle Fork
                 push_remote = "origin"
