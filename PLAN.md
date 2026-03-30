@@ -1,4 +1,4 @@
-PACKAGES below come from config.obs_packages. It is a provisional list that
+PACKAGES below come from config.package_submissions. It is a provisional list that
 needs to be refined at one point.
 
 Make agama-release-maker, a Python script, to

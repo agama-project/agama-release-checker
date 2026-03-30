@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from agama_release_checker.models import AppConfig
+    from agama_release_checker.models import (
+        AppConfig,
+        GiteaSubmitStrategy,
+        PackageSubmissionConfig,
+    )
 else:
     from .models import AppConfig
 
@@ -49,7 +53,7 @@ class ReleaseMaker:
 
     def submit_to_obs(self, source_project: str, target_project: str) -> None:
         """Submit all configured packages from source to target OBS project."""
-        for pkg in self.config.obs_packages:
+        for pkg in self.config.package_submissions.keys():
             logging.info(f"Submitting {pkg} from {source_project} to {target_project}")
             cmd = [
                 "osc",
@@ -67,6 +71,122 @@ class ReleaseMaker:
                 logging.error(f"Failed to submit {pkg}: {e.stderr.strip()}")
                 raise
 
+    def _submit_to_gitea_custom(
+        self,
+        pkg: str,
+        strategy: "GiteaSubmitStrategy",
+        target_branch: str,
+        source_project: str,
+    ) -> None:
+        """Submit a package to Gitea using a custom strategy."""
+        from urllib.parse import urlparse
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+
+            # 1. Clone source repo
+            source_repo_dir = tmp_path / f"{pkg}-source"
+            logging.info(f"Cloning source repo {strategy.source_repo}")
+            self._run_command(
+                ["git", "clone", strategy.source_repo, str(source_repo_dir)]
+            )
+
+            # 2. Run build command
+            logging.info(f"Running build command: {strategy.source_run}")
+            self._run_command(strategy.source_run.split(), cwd=source_repo_dir)
+
+            # 3. Clone target repo
+            target_repo_dir = tmp_path / f"{pkg}-target"
+            logging.info(f"Cloning target repo {strategy.target_repo}")
+            self._run_command(
+                ["git", "clone", strategy.target_repo, str(target_repo_dir)]
+            )
+
+            # 4. Create branch
+            branch_name = f"{target_branch}-update-{pkg}"
+            logging.info(f"Creating branch {branch_name}")
+            self._run_command(
+                ["git", "checkout", "-b", branch_name], cwd=target_repo_dir
+            )
+
+            # 5. Sync files
+            source_dist_dir = source_repo_dir / strategy.source_dir
+            target_dist_dir = target_repo_dir / strategy.target_dir
+
+            logging.info(f"Syncing files from {source_dist_dir} to {target_dist_dir}")
+            if target_dist_dir.exists():
+                shutil.rmtree(target_dist_dir)
+            shutil.copytree(source_dist_dir, target_dist_dir)
+
+            # 6. Commit and push
+            self._run_command(["git", "add", "."], cwd=target_repo_dir)
+            res = self._run_command(
+                ["git", "status", "--porcelain"], cwd=target_repo_dir
+            )
+            if not res.stdout.strip():
+                logging.info("No changes to commit")
+                return
+
+            self._run_command(
+                ["git", "commit", "-m", f"Update {pkg} from {source_project}"],
+                cwd=target_repo_dir,
+            )
+            self._run_command(
+                ["git", "push", "origin", branch_name, "--force"], cwd=target_repo_dir
+            )
+
+            # 7. Create PR using tea
+            parsed_url = urlparse(strategy.target_repo)
+            repo_path = parsed_url.path.strip("/").removesuffix(".git")
+
+            logging.info(f"Creating PR for {pkg} in {repo_path}")
+            check_pr_cmd = [
+                "tea",
+                "pr",
+                "list",
+                "--repo",
+                repo_path,
+                "--state",
+                "open",
+                "-f",
+                "index,title,state,author,milestone,updated,labels,head,base,url",
+                "--output",
+                "json",
+            ]
+
+            try:
+                res = self._run_command(check_pr_cmd)
+                all_prs = json.loads(res.stdout)
+                existing_prs = [
+                    pr
+                    for pr in all_prs
+                    if pr.get("head") == branch_name and pr.get("base") == target_branch
+                ]
+                if existing_prs:
+                    logging.info(
+                        f"Pull request already exists for {pkg}: {existing_prs[0].get('url')}"
+                    )
+                else:
+                    pr_cmd = [
+                        "tea",
+                        "pr",
+                        "create",
+                        "--repo",
+                        repo_path,
+                        "--base",
+                        target_branch,
+                        "--head",
+                        branch_name,
+                        "--title",
+                        f"Update {pkg} from {source_project}",
+                        "--description",
+                        f"Automatic update of {pkg} from {source_project}",
+                    ]
+                    self._run_command(pr_cmd)
+            except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
+                logging.error(f"Failed to check or create PR for {pkg}: {e}")
+                raise
+
     def submit_to_gitea(
         self,
         source_project: str,
@@ -80,7 +200,16 @@ class ReleaseMaker:
         Checks out source from OBS (defaulting to IBS), clones the target Gitea repo,
         syncs files, and creates or updates a pull request.
         """
-        for pkg in self.config.obs_packages:
+        for pkg, pkg_cfg in self.config.package_submissions.items():
+            if pkg_cfg.gitea_submit:
+                self._submit_to_gitea_custom(
+                    pkg,
+                    pkg_cfg.gitea_submit,
+                    target_branch,
+                    source_project,
+                )
+                continue
+
             with tempfile.TemporaryDirectory() as tmpdir:
                 tmp_path = Path(tmpdir)
 

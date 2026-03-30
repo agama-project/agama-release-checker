@@ -140,11 +140,45 @@ _CONFIG_CLASSES: dict[str, type[RepositoryConfig]] = {
 
 
 @dataclass
+class GiteaSubmitStrategy:
+    """Custom strategy for submitting a package to Gitea.
+
+    1. Check out source_repo
+    2. Run source_run
+    3. Check out target_repo
+    4. Copy source_repo/source_dir to target_repo/target_dir
+    (also make a branch and a PR, like with the regular strategy)
+    """
+
+    source_repo: str
+    source_run: str
+    source_dir: str
+    target_repo: str
+    target_dir: str
+
+
+@dataclass
+class PackageSubmissionConfig:
+    """Submission configuration for a specific package."""
+
+    gitea_submit: GiteaSubmitStrategy | None = None
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "PackageSubmissionConfig":
+        d = dict(d)
+        if "gitea_submit" in d and isinstance(d["gitea_submit"], dict):
+            d["gitea_submit"] = GiteaSubmitStrategy(**d["gitea_submit"])
+        return cls(**d)
+
+
+@dataclass
 class AppConfig:
     """Top-level application configuration loaded from config.yml."""
 
     repositories: list[RepositoryConfig]
-    obs_packages: list[str] = field(default_factory=list)
+    package_submissions: dict[str, PackageSubmissionConfig] = field(
+        default_factory=dict
+    )
     binary_patterns_by_source: dict[str, list[str]] = field(default_factory=dict)
     spec_names_by_package: dict[str, list[str]] = field(default_factory=dict)
 
@@ -156,6 +190,12 @@ class AppConfig:
         data["repositories"] = [
             RepositoryConfig.from_dict(r) for r in data["repositories"]
         ]
+        if "package_submissions" in data:
+            data["package_submissions"] = {
+                k: PackageSubmissionConfig.from_dict(v or {})
+                for k, v in data["package_submissions"].items()
+            }
+
         return cls(**data)
 
     @property

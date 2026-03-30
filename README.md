@@ -36,6 +36,8 @@ Run `./agama-release-maker --help` to see all options and subcommands.
 Subcommands:
 - `obs-submit SOURCE TARGET`: Submits packages from SOURCE OBS project to TARGET project.
 - `gitea-submit SOURCE ORG BRANCH`: Syncs OBS SOURCE project to Gitea ORG on BRANCH and creates pull requests.
+  For packages with a `gitea_submit` strategy in `config.yml`, it performs a custom
+  submission from an upstream Git repository instead of OBS.
 
 ### License
 
