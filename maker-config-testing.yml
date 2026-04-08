@@ -8,6 +8,8 @@ package_submissions:
   agama-installer:
     gitea_submit:
       source_repo: "https://github.com/agama-project/agama/"
+      # TODO:
+      # source_ref: ...
       source_run: "make -C live clean sles"
       source_dir: "live/dist"
       target_repo: "gitea@src.suse.de:mvidner/SLES.git"

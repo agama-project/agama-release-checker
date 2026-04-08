@@ -31,13 +31,40 @@ Common options:
 
 #### Release Maker
 
+The `agama-release-maker` tool automates the submission of multiple packages
+between OBS projects or from OBS/Git to Gitea repositories, including
+synchronization and pull request creation.
+
 Run `./agama-release-maker --help` to see all options and subcommands.
 
+Common options:
+  -c, --config FILE   Specify the configuration file (default: maker-config-testing.yml)
+  -v, --verbose       Enable verbose logging
+
 Subcommands:
-- `obs-submit SOURCE TARGET`: Submits packages from SOURCE OBS project to TARGET project.
-- `gitea-submit SOURCE ORG BRANCH`: Syncs OBS SOURCE project to Gitea ORG on BRANCH and creates pull requests.
-  For packages with a `gitea_submit` strategy in `config.yml`, it performs a custom
-  submission from an upstream Git repository instead of OBS.
+- `obs-submit`: Submits packages between OBS projects as defined in the
+  configuration file.
+  Automatically creates submit requests for all configured packages using
+  `osc sr --yes` for a non-interactive experience.
+- `gitea-submit`: Syncs source code to Gitea and creates pull requests
+  based on the configuration.
+  - **Robust PR detection**: Automatically checks for existing open PRs from the
+    same branch to avoid duplicate submissions.
+  - **Forking support**: If a `fork_org` is specified in the configuration, the
+    tool pushes to a fork instead of the target repository. This is useful when
+    direct write access is restricted.
+  - **Custom strategy**: For packages with a `gitea_submit` strategy in the
+    configuration, it performs a custom submission from an upstream Git
+    repository instead of OBS. This allows building or pre-processing source code
+    (e.g., for `agama-installer`) before syncing it to a subdirectory in Gitea.
+
+#### Requirements
+
+The tools depend on several command-line utilities:
+- `osc`: For OBS and IBS interactions.
+- `git`: For repository management.
+- `tea`: For Gitea pull request management.
+- `fuseiso`: For Release Checker to mount ISO images.
 
 ### License
 
