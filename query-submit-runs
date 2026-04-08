@@ -1,0 +1,21 @@
+#!/bin/bash
+# Query the last run of all known "Submit *" jobs
+
+set -eu
+set -o pipefail
+REPO=agama-project/agama
+BRANCH=master
+WORKFLOWS=(
+  "Submit agama"
+  "Submit agama-installer"
+  "Submit agama-products"
+  "Submit agama-web-ui"
+  "Submit rubygem-agama-yast"
+)
+PROPERTIES="displayTitle,conclusion,workflowName,startedAt,status"
+# jq explanation: "gh run list --limit 1" will return 5 singleton arrays,
+# jq --slurp will wrap them in an outer array,
+# and 'add' will concatenate the singletons into a resulting 5-element array
+printf "%s\n" "${WORKFLOWS[@]}" \
+  | xargs -I {} gh run list --repo "$REPO" --branch "$BRANCH" --workflow "{}" --limit 1 --json "$PROPERTIES" \
+  | jq --slurp 'add'

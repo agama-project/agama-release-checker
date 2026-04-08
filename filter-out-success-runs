@@ -1,0 +1,3 @@
+#!/bin/bash
+# In an output of "gh run list --json...", hide the boring successful ones
+jq '.[] | select(.status == "completed" and .conclusion != "success")'

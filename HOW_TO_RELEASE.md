@@ -1,3 +1,7 @@
+# How to Submit Agama
+
+(Originally written at <https://trello.com/c/9sl2EdSl>)
+
 ## Preparing the next release
 
 You should follow these steps:
@@ -50,7 +54,14 @@ Now just create a PR. See [this example](https://src.suse.de/products/SLES/pulls
 ‌
 
 - Check if all packages have been correctly submitted from `master` to OBS systemsmanagement:Agama:Devel project, all “submit *” GitHub actions should be green for the `master` branch. See [https://github.com/agama-project/agama/actions](https://github.com/agama-project/agama/actions "‌")
+
+  ```sh
+  ./query-submit-runs | ./filter-out-success-runs
+  ```
+
+
 - Check that all packages in systemsmanagement:Agama:Devel project build correctly. See [https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel](https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel "‌")
+
 - Copy the current state from `Devel` to `Release`:
   ```
   echo -n "agama agama-installer agama-auto agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc copypac systemsmanagement:Agama:Devel % systemsmanagement:Agama:Release
