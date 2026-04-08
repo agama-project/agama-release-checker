@@ -62,21 +62,34 @@ Now just create a PR. See [this example](https://src.suse.de/products/SLES/pulls
 
 - Check that all packages in systemsmanagement:Agama:Devel project build correctly. See [https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel](https://build.opensuse.org/project/show/systemsmanagement:Agama:Devel "‌")
 
+   ```sh
+   osc results --failed systemsmanagement:Agama:Devel
+   ```
+
 - Copy the current state from `Devel` to `Release`:
+
+  ```sh
+  echo -n "agama agama-installer agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc copypac systemsmanagement:Agama:Devel % systemsmanagement:Agama:Release
   ```
-  echo -n "agama agama-installer agama-auto agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc copypac systemsmanagement:Agama:Devel % systemsmanagement:Agama:Release
-  ```
+
 - Check that the packages build in [https://build.opensuse.org/project/show/systemsmanagement:Agama:Release](https://build.opensuse.org/project/show/systemsmanagement:Agama:Release "‌") and [https://build.suse.de/project/show/Devel:YaST:Agama:Release](https://build.suse.de/project/show/Devel:YaST:Agama:Release "‌") projects.
+
+  ```sh
+  iosc() { osc --api https://api.suse.de "$@"; }
+  osc results --failed systemsmanagement:Agama:Release
+  iosc results --failed Devel:YaST:Agama:Release
+  ```
+
 - Submit the packages to Factory
   ```
-  echo -n "agama agama-installer agama-auto agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc sr -m "weekly release" systemsmanagement:Agama:Release % openSUSE:Factory
+  echo -n "agama agama-installer agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc sr -m "weekly release" systemsmanagement:Agama:Release % openSUSE:Factory
   ```
 - Check if there are any declined old requests to SLES, close them first:
   ```
-  echo -n "agama agama-auto agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -L 1 osc -A https://api.suse.de request list -s declined SUSE:SLFO:Main
+  echo -n "agama agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -L 1 osc -A https://api.suse.de request list -s declined SUSE:SLFO:Main
   ```
 - Submit the packages to SLFO:
   ```
-  echo -n "agama agama-auto agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc -A https://api.suse.de sr -m "weekly release" Devel:YaST:Agama:Release % SUSE:SLFO:Main
+  echo -n "agama agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc -A https://api.suse.de sr -m "weekly release" Devel:YaST:Agama:Release % SUSE:SLFO:Main
   ```
 - For submitting the Live ISO use the process described above
