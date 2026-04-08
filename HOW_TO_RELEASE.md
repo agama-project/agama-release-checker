@@ -26,13 +26,25 @@ Create submissions to factory (to avoid problems during the review). Include the
 osc sr systemsmanagement:Agama:Release <package name> openSUSE:Factory
 ```
 
-### Submit to SUSE:SLFO:Main (SLE)
+### Submit to SLE
 
-Create submissions to SUSE:SLFO:Main for all packages except `agama-installer`. The command is (isc is shortcut to osc with internal API):
+SLE sources live in Git. You can find the sources for each package in `https://src.suse.de/pool/$PACKAGENAME` (e.g., [https://src.suse.de/pool/agama](https://src.suse.de/pool/agama)).
+Agama is composed of 4 different packages: `agama`, `rubygem-agama-yast`, `agama-web-ui` and `agama-products`. However, given that it depends on YaST, you might need to submit
+some of those packages too.
 
-```shell
-isc sr Devel:YaST:Agama:Release <package name> SUSE:SLFO:Main
-```
+There is one branch for each SLE code stream:
+
+* `slfo-main` for the next release (e.g., 16.1 at this point).
+* `slfo-1.2` for 16.0.
+
+For each package you should:
+
+1. Fork and clone the repository of the package you want to submit. If you already have a clone, make sure that it is up-to-date.
+2. Get the updated sources from the corresponding IBS project:
+  * [Devel:YaST:Agama:Release](https://build.suse.de/project/show/Devel:YaST:Agama:Release) for next SLE.
+  * [Devel:YaST:Agama:Maintenance:SLE-16](https://build.suse.de/project/show/Devel:YaST:Agama:Maintenance:SLE-16) for SLE 16.0.
+  * And so on...
+3. Copy the updated sources to your fork and create a PR against the corresponding branch of the `pool/$PACKAGE_NAME` repository.
 
 ### Submit ISO sources (SLE)
 
