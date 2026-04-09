@@ -77,6 +77,7 @@ def print_markdown_table(headers: list[str], rows: list[list[str]]) -> None:
             + " |"
         )
         print(row_str)
+    print()
 
 
 class LinkManager:
@@ -225,6 +226,7 @@ def print_packages_table(
         print(f"  (No matching packages found in {source_type})")
         return
 
+    explain_inconsistent = False
     headers = ["Git Updated", "Source Name", "Version", "Release"]
     rows: list[list[str]] = []
     for source_rpm, found in sorted(all_found.items()):
@@ -251,6 +253,7 @@ def print_packages_table(
         for pkg in found[1:]:
             if pkg.version != first_pkg.version or pkg.release != release:
                 inconsistent = True
+                explain_inconsistent = True
                 break
 
         suffix = ".../!\\" if inconsistent else ""
@@ -259,3 +262,7 @@ def print_packages_table(
     rows.sort(key=lambda x: x[0] if x[0] != "Unknown" else "0000-00-00", reverse=True)
 
     print_markdown_table(headers, rows)
+    if explain_inconsistent:
+        print(
+            "/!\\ - there are multiple binary packages, and their versions-releases differ"
+        )
