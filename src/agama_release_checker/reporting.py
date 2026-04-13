@@ -208,8 +208,10 @@ def print_packages_table(
         |-------------|--------------|---------|---------|
         | Unknown     | agama        | 1.0     | 1       |
         | Unknown     | agama-web-ui | 1.1     | 1.../!\ |
+        <BLANKLINE>
+        /!\ - there are multiple binary packages, and their versions-releases differ
 
-        Example with links and timestamps:
+    Example with links and timestamps:
         >>> cfg = GitConfig(name="agama", url="https://github.com/agama-project/agama/")
         >>> lm = LinkManager([cfg])
         >>> all_found = {
@@ -220,6 +222,7 @@ def print_packages_table(
         | Git Updated      | Source Name | Version           | Release |
         |------------------|-------------|-------------------|---------|
         | 2024-03-04 10:00 | agama       | 1.0.[a6a0f3735][] | 1       |
+        <BLANKLINE>
     """
     flat = [pkg for pkgs in all_found.values() for pkg in pkgs]
     if not flat:

@@ -29,6 +29,7 @@ def test_print_markdown_table(capsys):
         "|---------|---------------|\n"
         "| UK      | ZX Spectrum   |\n"
         "| CS      | Didaktik Gama |\n"
+        "\n"
     )
     assert captured.out == expected_output
 
