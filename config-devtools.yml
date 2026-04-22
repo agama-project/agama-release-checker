@@ -1,0 +1,125 @@
+repositories:
+- url: https://github.com/agama-project/agama/
+  type: git
+  name: agama
+- url: https://download.opensuse.org/distribution/leap/16.0/offline/
+  type: mirrorcache
+  name: leap-16.0-offline
+  files:
+  - Leap-16.0-offline-installer-x86_64.install.iso
+- url: https://download.opensuse.org/distribution/leap/16.0/offline/
+  type: mirrorcache
+  name: leap-16.0-online
+  files:
+  - Leap-16.0-online-installer-x86_64.install.iso
+- url: https://download.suse.de/install/SLES-16-GM/
+  type: mirrorcache
+  name: sles-16.0-offline
+  files:
+  - SLES-16.0-Full-x86_64-GM.install.iso
+- url: https://download.suse.de/install/SLES-16-GM/
+  type: mirrorcache
+  name: sles-16.0-online
+  files:
+  - SLES-16.0-Online-x86_64-GM.install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/QU0/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU0-offline
+  files:
+  - SLES-16.0-Full-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/QU0/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU0-online
+  files:
+  - SLES-16.0-Online-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/QU1/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU1-offline
+  files:
+  - SLES-16.0-Full-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/QU1/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU1-online
+  files:
+  - SLES-16.0-Online-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/QU2/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU2-offline
+  files:
+  - SLES-16.0-Full-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/QU2/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU2-online
+  files:
+  - SLES-16.0-Online-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/TEST/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU-next-offline
+  files:
+  - SLES-16.0-Full-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.0:/TEST/product/iso/
+  type: mirrorcache
+  name: sles-16.0-QU-next-online
+  files:
+  - SLES-16.0-Online-x86_64-Build*install.iso
+- url: https://download.opensuse.org/distribution/leap/16.1/offline/
+  type: mirrorcache
+  name: leap-16.1-beta-offline
+  files:
+  - Leap-16.1-offline-installer-x86_64-Build*install.iso
+- url: https://download.opensuse.org/distribution/leap/16.1/installer/iso/
+  type: mirrorcache
+  name: leap-16.1-beta-online
+  files:
+  - agama-installer.x86_64-*-Leap_16.1-Build*iso
+- url: https://download.suse.de/install/SLES-16.1-LATEST/
+  type: mirrorcache
+  name: sles-16.1-beta-offline
+  files:
+  - SLES-16.1-Full-x86_64-*-Snapshot-*.install.iso
+- url: https://download.suse.de/install/SLES-16.1-LATEST/
+  type: mirrorcache
+  name: sles-16.1-beta-online
+  files:
+  - SLES-16.1-Online-x86_64-*-Snapshot-*.install.iso
+- url: https://download.opensuse.org/repositories/systemsmanagement:/Agama:/Devel/images/iso/
+  type: mirrorcache
+  name: devel-tw
+  files:
+  - agama-installer.x86_64-*-openSUSE-Build*iso
+- url: https://download.opensuse.org/repositories/systemsmanagement:/Agama:/Devel/images_Leap_16.1/iso/
+  type: mirrorcache
+  name: devel-leap
+  files:
+  - agama-installer.x86_64-*-Leap_16.1-Build*iso
+- url: https://download.suse.de/ibs/Devel:/YaST:/Agama:/Head/images_SLES-16.1/iso/
+  type: mirrorcache
+  name: devel-sles
+  files:
+  - agama-installer.x86_64-*-SUSE_SLE_16.1-Build*iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.1:/TEST/product/iso/
+  type: mirrorcache
+  name: devel-sles-test-offline
+  files:
+  - SLES-16.1-Full-x86_64-Build*install.iso
+- url: https://download.suse.de/ibs/SUSE:/SLFO:/Products:/SLES:/16.1:/TEST/product/iso/
+  type: mirrorcache
+  name: devel-sles-test-online
+  files:
+  - SLES-16.1-Online-x86_64-Build*install.iso
+binary_patterns_by_source:
+  agama-web-ui:
+  - agama-web-ui
+  agama:
+  - agama
+  - agama-common
+  - agama-autoinstall
+  - agama-cli
+  - agama-cli-bash-completion
+  rubygem-agama-yast:
+  - ruby*-rubygem-agama-yast
+  - agama-yast
+  agama-products:
+  - agama-products*
+  agama-integration-tests:
+  - agama-integration-tests
