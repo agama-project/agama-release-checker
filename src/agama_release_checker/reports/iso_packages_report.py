@@ -142,10 +142,14 @@ class IsoPackagesReport:
                             shutil.copy(metadata_path, dest_path)
                             return get_packages_from_metadata_file(dest_path)
                         else:
-                            logging.error(
+                            logging.warning(
                                 f"No metadata found in mounted WWW/ISO: {iso_filename}"
                             )
-                            return None
+                            # Cache an empty list to prevent fallback and future mounting
+                            dest_path = cache_filepath.with_suffix(".packages.json")
+                            with open(dest_path, "w") as f:
+                                f.write("[]")
+                            return []
                 except RuntimeError as e:
                     logging.warning(
                         f"Could not extract metadata via WWW/ISO {iso_filename}: {e}"
@@ -230,10 +234,14 @@ class IsoPackagesReport:
                     shutil.copy(metadata_path, dest_path)
                     return get_packages_from_metadata_file(dest_path)
                 else:
-                    logging.error(
+                    logging.warning(
                         f"No metadata found in mounted ISO: {iso_filepath.name}"
                     )
-                    return None
+                    # Cache an empty list to prevent future mounting
+                    dest_path = iso_filepath.with_suffix(".packages.json")
+                    with open(dest_path, "w") as f:
+                        f.write("[]")
+                    return []
         except RuntimeError as e:
             logging.error(f"Could not extract metadata from {iso_filepath.name}: {e}")
             return None
