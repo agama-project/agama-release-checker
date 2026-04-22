@@ -51,6 +51,31 @@ def unmount_iso(mount_point: Path) -> bool:
         return False
 
 
+class IsoMounter:
+    """Context manager for mounting and unmounting an ISO file."""
+
+    def __init__(self, iso_path: Path, mount_point: Path):
+        self.iso_path = iso_path
+        self.mount_point = mount_point
+        self.mounted = False
+
+    def __enter__(self) -> Path:
+        if mount_iso(self.iso_path, self.mount_point):
+            self.mounted = True
+            return self.mount_point
+        raise RuntimeError(f"Failed to mount ISO: {self.iso_path}")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.mounted:
+            unmount_iso(self.mount_point)
+            # unmount_iso already tries to rmdir, but we might want to ensure it is gone
+            if self.mount_point.exists():
+                try:
+                    self.mount_point.rmdir()
+                except OSError:
+                    pass
+
+
 def get_packages_from_metadata_file(
     packages_json_maybe_gz: Path,
 ) -> list[BinaryPackage]:

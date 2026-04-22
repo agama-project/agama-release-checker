@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from collections.abc import Sequence
 
 import fnmatch
@@ -15,6 +16,7 @@ from agama_release_checker.iso_utils import (
     get_packages_from_metadata,
     get_metadata_path,
     get_packages_from_metadata_file,
+    IsoMounter,
 )
 from agama_release_checker.models import (
     MirrorcacheConfig,
@@ -63,29 +65,52 @@ class IsoPackagesReport:
     def run(self) -> tuple[str | None, list[BinaryPackage] | None]:
         """Processes a single mirrorcache configuration."""
         logging.info(f"Processing mirrorcache: {self.config.name}")
-        base_url = self.config.url
-        patterns = self.config.files
 
         # Directory structure: CACHE_DIR/repo_type/repo_name/
         repo_dir = CACHE_DIR / "mirrorcache" / self.config.name
         ensure_dir(repo_dir)
 
+        latest_iso_url = self._find_latest_iso_url(repo_dir)
+        if not latest_iso_url:
+            return None, None
+
+        iso_filepath = self._ensure_iso_local(latest_iso_url, repo_dir)
+        if not iso_filepath:
+            return latest_iso_url, None
+
+        # Cleanup old ISOs
+        self._cleanup_old_isos(repo_dir)
+
+        packages = self._get_cached_metadata(iso_filepath)
+        if packages is not None:
+            return latest_iso_url, packages
+
+        packages = self._extract_and_cache_metadata(iso_filepath)
+        return latest_iso_url, packages
+
+    def _find_latest_iso_url(self, repo_dir: Path) -> str | None:
+        """Finds the latest ISO URL based on configuration patterns."""
+        base_url = self.config.url
+        patterns = self.config.files
         iso_urls = find_iso_urls(base_url, patterns, cache_file=repo_dir / "index.html")
 
         if not iso_urls:
             logging.warning(f"No ISOs found matching patterns {patterns} at {base_url}")
-            return None, None
+            return None
 
         iso_urls.sort()
         latest_iso_url = iso_urls[-1]
         logging.debug(f"Determined latest ISO: {latest_iso_url}")
+        return latest_iso_url
 
+    def _ensure_iso_local(self, latest_iso_url: str, repo_dir: Path) -> Path | None:
+        """Ensures the latest ISO is available locally, downloading if necessary."""
         iso_filename = latest_iso_url.split("/")[-1]
         iso_filepath = repo_dir / iso_filename
 
         if not iso_filepath.exists():
             if not download_file(latest_iso_url, iso_filepath):
-                return latest_iso_url, None  # Skip if download fails
+                return None  # Skip if download fails
         else:
             logging.info(f"In cache: {iso_filepath}")
             # Touch the file to update mtime, ensuring it's treated as recent
@@ -93,40 +118,42 @@ class IsoPackagesReport:
                 iso_filepath.touch()
             except OSError:
                 pass
+        return iso_filepath
 
-        # Cleanup old ISOs
-        self._cleanup_old_isos(repo_dir)
-
-        # Caching logic for metadata
-        # We check if we already have the metadata cached
+    def _get_cached_metadata(self, iso_filepath: Path) -> list[BinaryPackage] | None:
+        """Checks if metadata for the given ISO is already cached."""
         # Look for both .gz and plain json
         metadata_cache_gz = iso_filepath.with_suffix(".packages.json.gz")
         metadata_cache_plain = iso_filepath.with_suffix(".packages.json")
 
         if metadata_cache_gz.exists():
             logging.info(f"In cache: {metadata_cache_gz}")
-            return latest_iso_url, get_packages_from_metadata_file(metadata_cache_gz)
+            return get_packages_from_metadata_file(metadata_cache_gz)
         if metadata_cache_plain.exists():
             logging.info(f"In cache: {metadata_cache_plain}")
-            return latest_iso_url, get_packages_from_metadata_file(metadata_cache_plain)
+            return get_packages_from_metadata_file(metadata_cache_plain)
+        return None
 
-        # Not in cache, we need to mount and extract
+    def _extract_and_cache_metadata(
+        self, iso_filepath: Path
+    ) -> list[BinaryPackage] | None:
+        """Mounts the ISO, extracts metadata, and caches it."""
         mount_point = CACHE_DIR / "mounts" / self.config.name
         ensure_dir(mount_point)
 
-        if mount_iso(iso_filepath, mount_point):
-            try:
-                metadata_path = get_metadata_path(mount_point)
+        try:
+            with IsoMounter(iso_filepath, mount_point) as mounted_path:
+                metadata_path = get_metadata_path(mounted_path)
                 if metadata_path:
                     # Cache the metadata file, using the same suffix
                     # convention as the cache lookup above
-                    if metadata_path.name.endswith(".packages.json.gz"):
-                        cache_suffix = ".packages.json.gz"
-                    else:
-                        cache_suffix = ".packages.json"
+                    cache_suffix = (
+                        ".packages.json.gz"
+                        if metadata_path.name.endswith(".packages.json.gz")
+                        else ".packages.json"
+                    )
                     dest_path = iso_filepath.with_suffix(cache_suffix)
                     logging.info(f"Caching metadata from ISO to {dest_path.name}")
-                    import shutil
 
                     # Remove existing file first — copy2 preserves the
                     # ISO's read-only permissions, so a stale copy would
@@ -134,17 +161,15 @@ class IsoPackagesReport:
                     if dest_path.exists():
                         dest_path.unlink()
                     shutil.copy(metadata_path, dest_path)
-                    return latest_iso_url, get_packages_from_metadata_file(dest_path)
+                    return get_packages_from_metadata_file(dest_path)
                 else:
-                    logging.error(f"No metadata found in mounted ISO: {iso_filename}")
-                    return latest_iso_url, None
-            finally:
-                unmount_iso(mount_point)
-                try:
-                    mount_point.rmdir()
-                except OSError:
-                    pass
-        return latest_iso_url, None
+                    logging.error(
+                        f"No metadata found in mounted ISO: {iso_filepath.name}"
+                    )
+                    return None
+        except RuntimeError as e:
+            logging.error(f"Could not extract metadata from {iso_filepath.name}: {e}")
+            return None
 
     def _print_packages_table(
         self,

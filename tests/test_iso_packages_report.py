@@ -37,12 +37,8 @@ def test_iso_packages_report_caching(tmp_path, caplog):
         patch(
             "agama_release_checker.reports.iso_packages_report.download_file"
         ) as mock_download,
-        patch(
-            "agama_release_checker.reports.iso_packages_report.mount_iso"
-        ) as mock_mount,
-        patch(
-            "agama_release_checker.reports.iso_packages_report.unmount_iso"
-        ) as mock_unmount,
+        patch("agama_release_checker.iso_utils.mount_iso") as mock_mount,
+        patch("agama_release_checker.iso_utils.unmount_iso") as mock_unmount,
         patch(
             "agama_release_checker.reports.iso_packages_report.get_metadata_path"
         ) as mock_get_meta_path,
