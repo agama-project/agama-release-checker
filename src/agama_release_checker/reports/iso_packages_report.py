@@ -17,6 +17,8 @@ from agama_release_checker.iso_utils import (
     get_metadata_path,
     get_packages_from_metadata_file,
     IsoMounter,
+    WWWMounter,
+    is_wwwdirfs_available,
 )
 from agama_release_checker.models import (
     MirrorcacheConfig,
@@ -74,9 +76,8 @@ class IsoPackagesReport:
         if not latest_iso_url:
             return None, None
 
-        iso_filepath = self._ensure_iso_local(latest_iso_url, repo_dir)
-        if not iso_filepath:
-            return latest_iso_url, None
+        iso_filename = latest_iso_url.split("/")[-1]
+        iso_filepath = repo_dir / iso_filename
 
         # Cleanup old ISOs
         self._cleanup_old_isos(repo_dir)
@@ -85,8 +86,74 @@ class IsoPackagesReport:
         if packages is not None:
             return latest_iso_url, packages
 
-        packages = self._extract_and_cache_metadata(iso_filepath)
+        # Try extracting without downloading using wwwdirfs
+        if is_wwwdirfs_available():
+            packages = self._extract_metadata_via_wwwdirfs(latest_iso_url, iso_filepath)
+            if packages is not None:
+                return latest_iso_url, packages
+            logging.info("Falling back to downloading ISO")
+
+        # Fallback: Download and extract
+        local_iso_filepath = self._ensure_iso_local(latest_iso_url, repo_dir)
+        if not local_iso_filepath:
+            return latest_iso_url, None
+
+        packages = self._extract_and_cache_metadata(local_iso_filepath)
         return latest_iso_url, packages
+
+    def _extract_metadata_via_wwwdirfs(
+        self, latest_iso_url: str, cache_filepath: Path
+    ) -> list[BinaryPackage] | None:
+        """Mounts the remote directory containing the ISO, mounts the ISO from it, and extracts metadata."""
+        url_dir = latest_iso_url.rsplit("/", 1)[0]
+        iso_filename = latest_iso_url.split("/")[-1]
+
+        mount_point_www = CACHE_DIR / "mounts_www" / self.config.name
+        ensure_dir(mount_point_www)
+
+        try:
+            with WWWMounter(url_dir, mount_point_www) as mounted_www:
+                iso_in_www = mounted_www / iso_filename
+                if not iso_in_www.exists():
+                    logging.warning(
+                        f"ISO file not found in wwwdirfs mount: {iso_in_www}"
+                    )
+                    return None
+
+                # Now mount the ISO from the www mount point
+                mount_point_iso = CACHE_DIR / "mounts" / self.config.name
+                ensure_dir(mount_point_iso)
+                try:
+                    with IsoMounter(iso_in_www, mount_point_iso) as mounted_iso:
+                        metadata_path = get_metadata_path(mounted_iso)
+                        if metadata_path:
+                            cache_suffix = (
+                                ".packages.json.gz"
+                                if metadata_path.name.endswith(".packages.json.gz")
+                                else ".packages.json"
+                            )
+                            dest_path = cache_filepath.with_suffix(cache_suffix)
+                            logging.info(
+                                f"Caching metadata from WWW/ISO to {dest_path.name}"
+                            )
+
+                            if dest_path.exists():
+                                dest_path.unlink()
+                            shutil.copy(metadata_path, dest_path)
+                            return get_packages_from_metadata_file(dest_path)
+                        else:
+                            logging.error(
+                                f"No metadata found in mounted WWW/ISO: {iso_filename}"
+                            )
+                            return None
+                except RuntimeError as e:
+                    logging.warning(
+                        f"Could not extract metadata via WWW/ISO {iso_filename}: {e}"
+                    )
+                    return None
+        except RuntimeError as e:
+            logging.warning(f"Could not mount WWW directory {url_dir}: {e}")
+            return None
 
     def _find_latest_iso_url(self, repo_dir: Path) -> str | None:
         """Finds the latest ISO URL based on configuration patterns."""

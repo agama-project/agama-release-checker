@@ -1,18 +1,8 @@
-PACKAGES below come from config.package_submissions. It is a provisional list that
-needs to be refined at one point.
+IsoPackagesReport works by downloading large ISO files. We want to avoid that, if possible:
 
-Make agama-release-maker, a Python script, to
+Have IsoPackagesReport check, by running "wwwdirfs --help", if that FUSE tool is available.
+Also, run that yourself now.
 
-- [x] submit $PACKAGES from obs://systemsmanagement:Agama:Release to obs://home:mvidner:FakeFactory
-- [x] submit $PACKAGES from ibs://Devel:YaST:Agama:Release to Gitea mvidner:fake-slfo-main
-
-(Done by implementing `agama-release-maker` script with `obs-submit` and `gitea-submit` commands)
-
-Then,
-
-- [ ] determine PACKAGES
-
-With that, and having tested on the fake repos, add the production repos to agama-release-maker:
-
-- [ ] submit $PACKAGES from systemsmanagement:Agama:Release to obs://openSUSE:Factory
-- [ ] submit $PACKAGES from Devel:YaST:Agama:Release to Gitea pool:slfo
+Add a WWWMounter class to be used instead of downloading the ISO. It will use ?jsontable URLs.
+Use $CACHE_DIR/mounts_www as base for those mounts.
+Use plan mode.

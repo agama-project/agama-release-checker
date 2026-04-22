@@ -76,6 +76,60 @@ class IsoMounter:
                     pass
 
 
+def is_wwwdirfs_available() -> bool:
+    """Checks if the wwwdirfs command is available."""
+    return check_command("wwwdirfs")
+
+
+def mount_www(url: str, mount_point: Path) -> bool:
+    """Mounts a remote HTTP directory listing using wwwdirfs."""
+    logging.debug(f"Mounting WWW directory {url} to {mount_point}")
+    try:
+        mount_point.mkdir(parents=True, exist_ok=True)
+        # Use ?jsontable as required by the example if it's openSUSE download
+        url_with_query = url if "?" in url else f"{url}?jsontable"
+        subprocess.run(
+            ["wwwdirfs", url_with_query, str(mount_point)],
+            check=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+        logging.debug(f"WWW directory successfully mounted to {mount_point}")
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        logging.error(f"Error mounting WWW directory {url}: {e}")
+        return False
+
+
+def unmount_www(mount_point: Path) -> bool:
+    """Unmounts a wwwdirfs mounted directory."""
+    return unmount_iso(mount_point)  # same fusermount command
+
+
+class WWWMounter:
+    """Context manager for mounting and unmounting a remote HTTP directory."""
+
+    def __init__(self, url: str, mount_point: Path):
+        self.url = url
+        self.mount_point = mount_point
+        self.mounted = False
+
+    def __enter__(self) -> Path:
+        if mount_www(self.url, self.mount_point):
+            self.mounted = True
+            return self.mount_point
+        raise RuntimeError(f"Failed to mount WWW directory: {self.url}")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.mounted:
+            unmount_www(self.mount_point)
+            if self.mount_point.exists():
+                try:
+                    self.mount_point.rmdir()
+                except OSError:
+                    pass
+
+
 def get_packages_from_metadata_file(
     packages_json_maybe_gz: Path,
 ) -> list[BinaryPackage]:
