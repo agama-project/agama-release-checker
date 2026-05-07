@@ -155,7 +155,7 @@ class IsoPackagesReport:
                         f"Could not extract metadata via WWW/ISO {iso_filename}: {e}"
                     )
                     return None
-        except RuntimeError as e:
+        except (RuntimeError, OSError) as e:
             logging.warning(f"Could not mount WWW directory {url_dir}: {e}")
             return None
 
