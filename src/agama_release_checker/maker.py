@@ -319,11 +319,11 @@ class ReleaseMaker:
                     ["git", "checkout", "-b", branch_name], cwd=git_repo_dir
                 )
 
-                # 5. Sync files (excluding .git)
+                # 5. Sync files (excluding .git and .gitattributes)
                 logging.info("Syncing files from OBS to Gitea")
-                # Remove all files in git repo except .git
+                # Remove all files in git repo except .git and .gitattributes
                 for item in git_repo_dir.iterdir():
-                    if item.name == ".git":
+                    if item.name in (".git", ".gitattributes"):
                         continue
                     if item.is_dir():
                         shutil.rmtree(item)
