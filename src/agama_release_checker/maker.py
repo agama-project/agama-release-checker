@@ -177,6 +177,16 @@ class ReleaseMaker:
                 logging.info("No changes to commit")
                 return
 
+            # Extract the diff of any .changes files to use in the PR description.
+            # Note: '*.changes' here matches recursively in subdirectories as well.
+            diff_res = self._run_command(
+                ["git", "diff", "--cached", "--", "*.changes"], cwd=target_repo_dir
+            )
+            changes_diff = diff_res.stdout.strip()
+            pr_description = f"Automatic update of {pkg} from {source_project}"
+            if changes_diff:
+                pr_description += f"\n\n```diff\n{changes_diff}\n```"
+
             self._run_command(
                 ["git", "commit", "-m", f"Update {pkg} from {source_project}"],
                 cwd=target_repo_dir,
@@ -233,7 +243,7 @@ class ReleaseMaker:
                         "--title",
                         f"Update {pkg} from {source_project}",
                         "--description",
-                        f"Automatic update of {pkg} from {source_project}",
+                        pr_description,
                     ]
                     try:
                         self._run_command(pr_cmd)
@@ -349,6 +359,16 @@ class ReleaseMaker:
                     logging.info("No changes to commit")
                     continue
 
+                # Extract the diff of any .changes files to use in the PR description.
+                # Note: '*.changes' here matches recursively in subdirectories as well.
+                diff_res = self._run_command(
+                    ["git", "diff", "--cached", "--", "*.changes"], cwd=git_repo_dir
+                )
+                changes_diff = diff_res.stdout.strip()
+                pr_description = f"Automatic update from {source_project}"
+                if changes_diff:
+                    pr_description += f"\n\n```diff\n{changes_diff}\n```"
+
                 self._run_command(
                     ["git", "commit", "-m", f"Update from OBS {source_project}"],
                     cwd=git_repo_dir,
@@ -407,7 +427,7 @@ class ReleaseMaker:
                             "--title",
                             f"Update from OBS {source_project}",
                             "--description",
-                            f"Automatic update from {source_project}",
+                            pr_description,
                         ]
                         try:
                             self._run_command(pr_cmd)

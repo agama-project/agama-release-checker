@@ -88,6 +88,8 @@ def test_submit_to_gitea(
     def run_side_effect(cmd, **kwargs):
         if "status" in cmd:
             return MagicMock(returncode=0, stdout="M  file", stderr="")
+        if "diff" in cmd:
+            return MagicMock(returncode=0, stdout="Mocked diff output", stderr="")
         if "pr" in cmd and "list" in cmd:
             # Return empty list to trigger PR creation
             return MagicMock(returncode=0, stdout="[]", stderr="")
@@ -149,7 +151,7 @@ def test_submit_to_gitea(
             "--title",
             "Update from OBS source_proj",
             "--description",
-            "Automatic update from source_proj",
+            "Automatic update from source_proj\n\n```diff\nMocked diff output\n```",
         ],
         check=True,
         capture_output=True,
@@ -171,6 +173,8 @@ def test_submit_to_gitea_fork(
     def run_side_effect(cmd, **kwargs):
         if "status" in cmd:
             return MagicMock(returncode=0, stdout="M  file", stderr="")
+        if "diff" in cmd:
+            return MagicMock(returncode=0, stdout="Mocked diff output", stderr="")
         if "pr" in cmd and "list" in cmd:
             return MagicMock(returncode=0, stdout="[]", stderr="")
         return MagicMock(returncode=0, stdout="OK", stderr="")
@@ -205,7 +209,7 @@ def test_submit_to_gitea_fork(
             "--title",
             "Update from OBS source_proj",
             "--description",
-            "Automatic update from source_proj",
+            "Automatic update from source_proj\n\n```diff\nMocked diff output\n```",
         ],
         check=True,
         capture_output=True,
@@ -274,6 +278,8 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
     def run_side_effect(cmd, **kwargs):
         if "status" in cmd:
             return MagicMock(returncode=0, stdout="M  file", stderr="")
+        if "diff" in cmd:
+            return MagicMock(returncode=0, stdout="Mocked diff output", stderr="")
         if "pr" in cmd and "list" in cmd:
             return MagicMock(returncode=0, stdout="[]", stderr="")
         return MagicMock(returncode=0, stdout="OK", stderr="")
@@ -337,7 +343,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
             "--title",
             "Update custom-pkg from source_proj",
             "--description",
-            "Automatic update of custom-pkg from source_proj",
+            "Automatic update of custom-pkg from source_proj\n\n```diff\nMocked diff output\n```",
         ],
         check=True,
         capture_output=True,
