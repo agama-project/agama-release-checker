@@ -96,6 +96,32 @@ class ReleaseMaker:
             owner, repo = path.split("/", 1)
             return host, owner, repo
 
+    def _commit_and_get_pr_description(
+        self, repo_dir: Path, commit_msg: str, base_pr_desc: str
+    ) -> str | None:
+        """Stages changes, checks for diffs, commits, and builds a PR description.
+
+        Returns None if there are no changes to commit.
+        """
+        self._run_command(["git", "add", "."], cwd=repo_dir)
+        res = self._run_command(["git", "status", "--porcelain"], cwd=repo_dir)
+        if not res.stdout.strip():
+            logging.info("No changes to commit")
+            return None
+
+        # Extract the diff of any .changes files to use in the PR description.
+        # Note: '*.changes' here matches recursively in subdirectories as well.
+        diff_res = self._run_command(
+            ["git", "diff", "--cached", "--", "*.changes"], cwd=repo_dir
+        )
+        changes_diff = diff_res.stdout.strip()
+        pr_description = base_pr_desc
+        if changes_diff:
+            pr_description += f"\n\n```diff\n{changes_diff}\n```"
+
+        self._run_command(["git", "commit", "-m", commit_msg], cwd=repo_dir)
+        return pr_description
+
     def _submit_to_gitea_custom(
         self,
         pkg: str,
@@ -169,28 +195,14 @@ class ReleaseMaker:
             shutil.copytree(source_dist_dir, target_dist_dir)
 
             # 7. Commit and push
-            self._run_command(["git", "add", "."], cwd=target_repo_dir)
-            res = self._run_command(
-                ["git", "status", "--porcelain"], cwd=target_repo_dir
+            pr_description = self._commit_and_get_pr_description(
+                target_repo_dir,
+                f"Update {pkg} from {source_project}",
+                f"Automatic update of {pkg} from {source_project}",
             )
-            if not res.stdout.strip():
-                logging.info("No changes to commit")
+            if not pr_description:
                 return
 
-            # Extract the diff of any .changes files to use in the PR description.
-            # Note: '*.changes' here matches recursively in subdirectories as well.
-            diff_res = self._run_command(
-                ["git", "diff", "--cached", "--", "*.changes"], cwd=target_repo_dir
-            )
-            changes_diff = diff_res.stdout.strip()
-            pr_description = f"Automatic update of {pkg} from {source_project}"
-            if changes_diff:
-                pr_description += f"\n\n```diff\n{changes_diff}\n```"
-
-            self._run_command(
-                ["git", "commit", "-m", f"Update {pkg} from {source_project}"],
-                cwd=target_repo_dir,
-            )
             self._run_command(
                 ["git", "push", push_remote, branch_name, "--force"],
                 cwd=target_repo_dir,
@@ -350,29 +362,14 @@ class ReleaseMaker:
                         shutil.copy2(item, git_repo_dir / item.name)
 
                 # 6. Commit and push
-                self._run_command(["git", "add", "."], cwd=git_repo_dir)
-                # Check if there are changes
-                res = self._run_command(
-                    ["git", "status", "--porcelain"], cwd=git_repo_dir
+                pr_description = self._commit_and_get_pr_description(
+                    git_repo_dir,
+                    f"Update from OBS {source_project}",
+                    f"Automatic update from {source_project}",
                 )
-                if not res.stdout.strip():
-                    logging.info("No changes to commit")
+                if not pr_description:
                     continue
 
-                # Extract the diff of any .changes files to use in the PR description.
-                # Note: '*.changes' here matches recursively in subdirectories as well.
-                diff_res = self._run_command(
-                    ["git", "diff", "--cached", "--", "*.changes"], cwd=git_repo_dir
-                )
-                changes_diff = diff_res.stdout.strip()
-                pr_description = f"Automatic update from {source_project}"
-                if changes_diff:
-                    pr_description += f"\n\n```diff\n{changes_diff}\n```"
-
-                self._run_command(
-                    ["git", "commit", "-m", f"Update from OBS {source_project}"],
-                    cwd=git_repo_dir,
-                )
                 self._run_command(
                     ["git", "push", push_remote, branch_name, "--force"],
                     cwd=git_repo_dir,
