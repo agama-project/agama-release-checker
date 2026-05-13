@@ -34,19 +34,32 @@ def mock_config():
 @patch("agama_release_checker.maker.subprocess.run")
 def test_submit_to_obs(mock_run, mock_config):
     """Verifies that submit_to_obs calls osc sr with the correct arguments."""
-    mock_run.return_value = MagicMock(returncode=0, stdout="OK", stderr="")
+
+    def run_side_effect(cmd, **kwargs):
+        if "--diff" in cmd:
+            return MagicMock(returncode=0, stdout="Mocked diff output", stderr="")
+        if "filterdiff" in cmd:
+            return MagicMock(returncode=0, stdout="Mocked changes diff", stderr="")
+        return MagicMock(returncode=0, stdout="OK", stderr="")
+
+    mock_run.side_effect = run_side_effect
 
     maker = ReleaseMaker(mock_config)
     maker.submit_to_obs()
 
-    assert mock_run.call_count == 2
+    # For each package (2 packages):
+    # 1. osc sr --diff
+    # 2. filterdiff
+    # 3. osc sr
+    assert mock_run.call_count == 6
+
     mock_run.assert_any_call(
         [
             "osc",
             "sr",
             "--yes",
             "-m",
-            "Automatic update from source_proj",
+            "Automatic update from source_proj\n\nMocked changes diff",
             "source_proj",
             "pkg1",
             "target_proj",
@@ -55,6 +68,7 @@ def test_submit_to_obs(mock_run, mock_config):
         capture_output=True,
         text=True,
         cwd=None,
+        input=None,
     )
 
 
@@ -73,7 +87,7 @@ def test_submit_to_obs_no_changes(mock_run, mock_config):
     # This should NOT raise an exception
     maker.submit_to_obs()
 
-    assert mock_run.call_count == 2
+    assert mock_run.call_count == 4
 
 
 @patch("agama_release_checker.maker.Path.iterdir")
@@ -122,6 +136,7 @@ def test_submit_to_gitea(
         capture_output=True,
         text=True,
         cwd=ANY,
+        input=ANY,
     )
     mock_run.assert_any_call(
         [
@@ -136,6 +151,7 @@ def test_submit_to_gitea(
         capture_output=True,
         text=True,
         cwd=None,
+        input=ANY,
     )
     mock_run.assert_any_call(
         [
@@ -157,6 +173,7 @@ def test_submit_to_gitea(
         capture_output=True,
         text=True,
         cwd=ANY,
+        input=ANY,
     )
 
 
@@ -192,6 +209,7 @@ def test_submit_to_gitea_fork(
         capture_output=True,
         text=True,
         cwd=ANY,
+        input=ANY,
     )
 
     # Verify PR creation with fork head
@@ -215,6 +233,7 @@ def test_submit_to_gitea_fork(
         capture_output=True,
         text=True,
         cwd=ANY,
+        input=ANY,
     )
 
 
@@ -307,6 +326,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         capture_output=True,
         text=True,
         cwd=None,
+        input=ANY,
     )
     mock_run.assert_any_call(
         ["make", "build"],
@@ -314,6 +334,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         capture_output=True,
         text=True,
         cwd=ANY,
+        input=ANY,
     )
     mock_run.assert_any_call(
         [
@@ -328,6 +349,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         capture_output=True,
         text=True,
         cwd=None,
+        input=ANY,
     )
     mock_run.assert_any_call(
         [
@@ -349,4 +371,5 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
         capture_output=True,
         text=True,
         cwd=ANY,
+        input=ANY,
     )

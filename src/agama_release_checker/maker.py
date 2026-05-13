@@ -32,7 +32,7 @@ class ReleaseMaker:
         self.config = config
 
     def _run_command(
-        self, cmd: list[str], cwd: Path | None = None
+        self, cmd: list[str], cwd: Path | None = None, input: str | None = None
     ) -> subprocess.CompletedProcess:
         """Runs a command and returns the completed process.
 
@@ -41,7 +41,7 @@ class ReleaseMaker:
         logging.info(f"Running command: {' '.join(cmd)} in {cwd or '.'}")
         try:
             return subprocess.run(
-                cmd, check=True, capture_output=True, text=True, cwd=cwd
+                cmd, check=True, capture_output=True, text=True, cwd=cwd, input=input
             )
         except subprocess.CalledProcessError as e:
             logging.error(f"Command failed: {' '.join(cmd)}")
@@ -51,6 +51,27 @@ class ReleaseMaker:
                 logging.error(f"STDERR: {e.stderr.strip()}")
             raise
 
+    def _get_obs_changes_diff(
+        self, source_project: str, pkg: str, target_project: str
+    ) -> str:
+        """Returns the diff of .changes files between source and target."""
+        try:
+            diff_res = self._run_command(
+                ["osc", "sr", "--diff", source_project, pkg, target_project]
+            )
+            if not diff_res.stdout:
+                return ""
+
+            # Filter the diff to only include .changes files
+            filter_cmd = ["filterdiff", "-i", "*.changes"]
+            res = self._run_command(filter_cmd, input=diff_res.stdout)
+            return res.stdout.strip()
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            # FileNotFoundError happens if filterdiff is missing.
+            # CalledProcessError might happen if osc sr --diff fails (e.g. no changes)
+            logging.debug(f"Failed to get changes diff for {pkg}: {e}")
+            return ""
+
     def submit_to_obs(self) -> None:
         """Submit all configured packages from source to target OBS project."""
         source_project = self.config.obs_submissions.source_project
@@ -58,12 +79,20 @@ class ReleaseMaker:
 
         for pkg in self.config.package_submissions.keys():
             logging.info(f"Submitting {pkg} from {source_project} to {target_project}")
+
+            message = f"Automatic update from {source_project}"
+            changes_diff = self._get_obs_changes_diff(
+                source_project, pkg, target_project
+            )
+            if changes_diff:
+                message += f"\n\n{changes_diff}"
+
             cmd = [
                 "osc",
                 "sr",
                 "--yes",
                 "-m",
-                f"Automatic update from {source_project}",
+                message,
                 source_project,
                 pkg,
                 target_project,

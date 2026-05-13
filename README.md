@@ -65,6 +65,7 @@ The tools depend on several command-line utilities:
 - `git`: For repository management.
 - `tea`: For Gitea pull request management.
 - `fuseiso`: For Release Checker to mount ISO images.
+- `filterdiff` (from `patchutils`): For Release Maker to extract `.changes` diffs.
 
 ### License
 
