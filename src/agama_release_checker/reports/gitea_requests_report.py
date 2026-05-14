@@ -75,6 +75,7 @@ class GiteaRequestsReport:
 
                 prs.append(
                     GiteaPullRequest(
+                        repo=repo,
                         index=item.get("index", ""),
                         state=item.get("state", ""),
                         author=item.get("author", ""),
@@ -113,8 +114,8 @@ class GiteaRequestsReport:
 
         headers = [
             "Updated",
+            "Repo",
             "Index",
-            "State",
             "Mergeable",
             "Title",
             "Author",
@@ -125,8 +126,8 @@ class GiteaRequestsReport:
             rows.append(
                 [
                     format_timestamp(pr.updated_at),
+                    pr.repo,
                     f"[{pr.index}]({pr.url})",
-                    pr.state,
                     "Yes" if pr.mergeable else "No",
                     pr.title,
                     pr.author,

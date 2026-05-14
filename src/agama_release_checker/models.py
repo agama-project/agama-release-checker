@@ -64,6 +64,7 @@ class ObsRequest:
 
 @dataclass
 class GiteaPullRequest:
+    repo: str
     index: str
     state: str
     author: str

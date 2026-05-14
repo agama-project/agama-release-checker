@@ -93,6 +93,7 @@ def test_gitea_pull_requests_report_branch_filtering(mock_run):
 
 def test_gitea_requests_report_sorting(capsys):
     pr1 = GiteaPullRequest(
+        repo="pool/foo",
         index="1",
         state="open",
         author="a1",
@@ -105,6 +106,7 @@ def test_gitea_requests_report_sorting(capsys):
         comments="0",
     )
     pr2 = GiteaPullRequest(
+        repo="pool/bar",
         index="2",
         state="open",
         author="a2",
