@@ -96,11 +96,11 @@ Now just create a PR. See [this example](https://src.suse.de/products/SLES/pulls
   ```
   echo -n "agama agama-installer agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc sr -m "weekly release" systemsmanagement:Agama:Release % openSUSE:Factory
   ```
-- Check if there are any declined old requests to SLES, close them first:
+- (OBSOLETE, use Gitea) Check if there are any declined old requests to SLES, close them first:
   ```
   echo -n "agama agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -L 1 osc -A https://api.suse.de request list -s declined SUSE:SLFO:Main
   ```
-- Submit the packages to SLFO:
+- (OBSOLETE, use Gitea) Submit the packages to SLFO:
   ```
   echo -n "agama agama-products agama-web-ui rubygem-agama-yast" | xargs -d " " -I % osc -A https://api.suse.de sr -m "weekly release" Devel:YaST:Agama:Release % SUSE:SLFO:Main
   ```
