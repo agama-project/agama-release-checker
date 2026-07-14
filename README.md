@@ -73,19 +73,21 @@ GPL-2.0-or-later (like Agama itself)
 
 ### Installation
 
-Install dependencies with zypper if available:
+On openSUSE Leap 16.0, install dependencies with zypper:
 
-    zypper install python311-pytest python311-pytest-cov python311-requests-mock \
-        python311-PyYAML python311-requests \
-        python311-mypy python311-black
+    zypper install python313-pytest python313-pytest-cov python313-requests-mock \
+        python313-PyYAML python313-requests \
+        python313-mypy python313-black
 
-If zypper is not available, install uv:
+If those are not available, install uv:
 
     curl -LsSf https://astral.sh/uv/install.sh | sh
 
 Then install dependencies with:
 
-    uv pip install --python python3.11 '.[test]'
+    uv venv --python python3.11
+    . .venv/bin/activate
+    uv pip install '.[test]'
 
 ### Source (Annotated)
 
