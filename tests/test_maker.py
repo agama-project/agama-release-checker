@@ -45,7 +45,7 @@ def test_submit_to_obs(mock_run, mock_config):
     mock_run.side_effect = run_side_effect
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_obs()
+    maker.submit_to_obs([])
 
     # For each package (2 packages):
     # 1. osc sr --diff
@@ -85,7 +85,7 @@ def test_submit_to_obs_no_changes(mock_run, mock_config):
 
     maker = ReleaseMaker(mock_config)
     # This should NOT raise an exception
-    maker.submit_to_obs()
+    maker.submit_to_obs(["pkg1", "pkg2"])
 
     assert mock_run.call_count == 4
 
@@ -115,7 +115,7 @@ def test_submit_to_gitea(
     mock_iterdir.return_value = []
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea()
+    maker.submit_to_gitea([])
 
     # For each package (2 packages):
     # 1. osc co (with -A)
@@ -200,7 +200,7 @@ def test_submit_to_gitea_fork(
     mock_iterdir.return_value = []
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea()
+    maker.submit_to_gitea([])
 
     # Verify push to fork
     mock_run.assert_any_call(
@@ -270,7 +270,7 @@ def test_submit_to_gitea_existing_pr(
     mock_iterdir.return_value = []
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea()
+    maker.submit_to_gitea([])
 
     # Verify that tea pr create was NOT called
     for call in mock_run.call_args_list:
@@ -306,7 +306,7 @@ def test_submit_to_gitea_custom(mock_run, mock_copytree, mock_config):
     mock_run.side_effect = run_side_effect
 
     maker = ReleaseMaker(mock_config)
-    maker.submit_to_gitea()
+    maker.submit_to_gitea([])
 
     # 1. git clone source
     # 2. make build

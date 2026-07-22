@@ -1,0 +1,29 @@
+package_submissions:
+# these 4 produce RPMs, from the main git repo
+  agama: {}
+  agama-products: {}
+  agama-web-ui: {}
+  rubygem-agama-yast: {}
+# also from the main repo, but produces an ISO
+  agama-installer:
+    gitea_submit:
+      source_repo: "https://github.com/agama-project/agama/"
+      # FIXME: this would need a source_branch too,
+      # implement it once we need it
+      source_branch: "SLE-16"
+      source_run: "make -C live clean sles"
+      source_dir: "live/dist"
+      target_repo: "gitea@src.suse.de:products/SLES.git"
+      target_dir: "agama-installer-SLES"
+      target_branch: "16.0"
+
+# no obs_submissions for SLE-16, but the config is required for now
+obs_submissions:
+  source_project: "nosuchproject"
+  target_project: "nosuchproject"
+
+gitea_submissions:
+  source_project: "Devel:YaST:Agama:Maintenance:SLE-16"
+  fork_org: mvidner
+  target_org: pool
+  target_branch: slfo-1.2

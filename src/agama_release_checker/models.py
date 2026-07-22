@@ -158,6 +158,7 @@ class GiteaSubmitStrategy:
     target_dir: str
     target_branch: str | None = None
     fork_org: str | None = None
+    source_branch: str | None = None
 
 
 @dataclass
