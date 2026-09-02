@@ -83,6 +83,12 @@ repositories:
   branch: slfo-1.2
   name: ibs-pool-slfo1.2
 
+- url: https://src.suse.de/pool/
+  type: gitea
+  internal: true
+  branch: slfo-1.3
+  name: ibs-pool-slfo1.3
+
 # maps from obs package to binary rpms (wildcards)
 binary_patterns_by_source:
   agama-web-ui:
