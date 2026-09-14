@@ -43,6 +43,10 @@ repositories:
   type: obs
   name: obs-sm-A-Maint160
 
+- url: https://build.opensuse.org/project/show/systemsmanagement:Agama:Maintenance:SLE-16.1
+  type: obs
+  name: obs-sm-A-Maint161
+
 # We don't do PRs here now
 #- url: https://src.opensuse.org/pool/
 #  type: gitea
