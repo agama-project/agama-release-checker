@@ -26,14 +26,19 @@ Follow these steps when asked to investigate and fix npm CVEs for a list of Bugz
 2. Extract the affected npm dependency (`$DEP`) from the bug title.
 
 #### 2. Fetch the CVE Record
+
 1. Fetch the official CVE record from the MITRE API using the extracted CVE ID. **Crucial: When fetching multiple records, add a `sleep 2` between curl calls to avoid rate limiting.**
+
    ```bash
    curl -s "https://cveawg.mitre.org/api/cve/${CVE_YYYY_NNNN}" -o "${CVE_YYYY_NNNN}.json"
    ```
+
 2. Keep this `${CVE_YYYY_NNNN}.json` file saved for your reference during both the planning and execution phases.
 
 #### 3. Determine the Update Path & Relevance
+
 Navigate to the `web/` directory and investigate the dependency to determine the bug's relevance:
+
 1. Run `node ../.gemini/skills/agama-npm-cves-update/scripts/get-versions.js <dependency_name>`.
    - **Spurious/Irrelevant:** If the dependency is "not found", the bug report may be spurious.
    - **Already Fixed/Processed:** If the dependency is present but all listed versions are already at a safe version (according to the CVE record), check project history (`git log`, `.changes` file) to see if it was already intentionally processed. If not intentionally processed, it was likely **fixed by accident** (e.g., by updating another library).
@@ -46,6 +51,7 @@ Navigate to the `web/` directory and investigate the dependency to determine the
 Update the `CVE-BUG-PLAN.md` file (create it in the root directory if it doesn't exist) with your findings for this specific bug.
 
 Include the following information in the plan for each bug:
+
 - **Bug ID:** (e.g., bsc#123456)
 - **CVE ID:** (e.g., CVE-2026-1234)
 - **Dependency:** (e.g., `shell-quote`)
@@ -73,6 +79,7 @@ TIMESTAMP_PLACEHOLDER - <your_name> <your_email>
 ```
 
 ### Phase 2: Execute and Commit (After User Approval)
+
 Once the `CVE-BUG-PLAN.md` is fully assembled, **stop and ask the user for approval**.
 
 After the user approves the plan, execute the steps for each bug one by one. Handle each bug based on its identified Status:
@@ -81,7 +88,9 @@ After the user approves the plan, execute the steps for each bug one by one. Han
 Prepend the skeleton of the `.changes` entry (with the correct timestamp via `LC_ALL=C date -u +"%a %b %e %H:%M:%S UTC %Y"`) to `web/package/agama-web-ui.changes`.
 
 #### 2. Apply the Fix & Commit (Per Bug)
+
 For each Normal or Fixed by accident bug:
+
 1. Apply the fix (run `npm update` or apply `overrides`). Skip this if "Fixed by accident".
 2. Append the specific dependency line to the correct section (`runtime`, `development`, or `updated previously`) in the `.changes` file.
 3. Extract the CVE description and wrap it to 72 characters: `jq -r '.containers.cna.descriptions[0].value' CVE-YYYY-NNNN.json | fmt -w 72`
