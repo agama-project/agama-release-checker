@@ -15,7 +15,7 @@ from agama_release_checker.reports.gitea_packages_report import GiteaPackagesRep
 @patch("agama_release_checker.reports.gitea_packages_report.ensure_dir")
 def test_packages_in_gitea_report(
     mock_ensure_dir, mock_read_text, mock_exists, mock_run_git
-) -> None:
+):
     # Setup mocks
     # For exists, we want it to return True for the repo and the files
     mock_exists.return_value = True

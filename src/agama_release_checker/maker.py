@@ -34,7 +34,7 @@ class ReleaseMaker:
 
     def _run_command(
         self, cmd: list[str], cwd: Path | None = None, input: str | None = None
-    ) -> subprocess.CompletedProcess:
+    ) -> subprocess.CompletedProcess[str]:
         """Runs a command and returns the completed process.
 
         Captures and logs stdout and stderr on failure for easier debugging.

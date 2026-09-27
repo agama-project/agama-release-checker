@@ -50,7 +50,7 @@ def test_print_markdown_table_extra_columns(capsys):
 
 
 def test_extract_git_hashes():
-    packages = [
+    packages: list[BinaryPackage | SourcePackage] = [
         BinaryPackage(
             name="agama", version="1.0+git.abcdef1", release="1", arch="x86_64"
         ),

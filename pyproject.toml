@@ -40,7 +40,7 @@ directory = "htmlcov"
 [tool.mypy]
 explicit_package_bases = true
 mypy_path = "src"
-strict = false
+strict = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"

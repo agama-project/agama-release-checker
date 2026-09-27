@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from types import TracebackType
 from .models import BinaryPackage
 
 
@@ -79,7 +80,12 @@ class IsoMounter:
             return self.mount_point
         raise RuntimeError(f"Failed to mount ISO: {self.iso_path}")
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         if self.mounted:
             unmount_iso(self.mount_point)
             # unmount_iso already tries to rmdir, but we might want to ensure it is gone
@@ -134,7 +140,12 @@ class WWWMounter:
             return self.mount_point
         raise RuntimeError(f"Failed to mount WWW directory: {self.url}")
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         if self.mounted:
             unmount_www(self.mount_point)
             if self.mount_point.exists():
