@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from urllib.parse import urljoin
 
-import requests  # type: ignore
+import requests
 import fnmatch
 
 from .utils import ensure_dir

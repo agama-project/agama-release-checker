@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest  # type: ignore
+import pytest
 
 from agama_release_checker.models import ObsConfig
 from agama_release_checker.reports.obs_packages_report import ObsPackagesReport
@@ -10,7 +10,7 @@ from agama_release_checker.reports.obs_packages_report import ObsPackagesReport
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
-def load_fixture(filename):
+def load_fixture(filename: str) -> str:
     with open(FIXTURES_DIR / filename, "r") as f:
         return f.read()
 

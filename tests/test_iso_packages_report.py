@@ -68,6 +68,7 @@ def test_iso_packages_report_caching(tmp_path, caplog):
             latest_url, packages = report.run()
 
             assert latest_url == "http://example.com/iso/test.iso"
+            assert packages is not None
             assert len(packages) == 1
             mock_mount.assert_called_once()
             mock_copy.assert_called_once()
@@ -79,6 +80,7 @@ def test_iso_packages_report_caching(tmp_path, caplog):
         metadata_cache_path.touch()
         latest_url, packages = report.run()
 
+        assert packages is not None
         assert len(packages) == 1
         # mount_iso should NOT be called again if cached
         assert mock_mount.call_count == 1

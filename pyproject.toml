@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "mypy",
     "pytest",
     "pytest-cov",
     "requests-mock",
@@ -39,3 +40,8 @@ directory = "htmlcov"
 [tool.mypy]
 explicit_package_bases = true
 mypy_path = "src"
+strict = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

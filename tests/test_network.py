@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 import time
-import pytest  # type: ignore
-import requests_mock  # type: ignore
+import pytest
+import requests_mock
 from agama_release_checker.network import find_iso_urls
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

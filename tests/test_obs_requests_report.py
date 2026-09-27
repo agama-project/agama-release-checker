@@ -10,7 +10,7 @@ from agama_release_checker.reporting import LinkManager
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
-def load_fixture(filename):
+def load_fixture(filename: str) -> str:
     with open(FIXTURES_DIR / filename, "r") as f:
         return f.read()
 

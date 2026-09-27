@@ -1,6 +1,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call, ANY
-import pytest  # type: ignore
+import pytest
 import subprocess
 
 from agama_release_checker.models import GiteaConfig
@@ -15,7 +15,7 @@ from agama_release_checker.reports.gitea_packages_report import GiteaPackagesRep
 @patch("agama_release_checker.reports.gitea_packages_report.ensure_dir")
 def test_packages_in_gitea_report(
     mock_ensure_dir, mock_read_text, mock_exists, mock_run_git
-):
+) -> None:
     # Setup mocks
     # For exists, we want it to return True for the repo and the files
     mock_exists.return_value = True
@@ -51,7 +51,7 @@ def test_packages_in_gitea_report(
     binary_patterns_by_source = {
         "agama": ["agama"],
     }
-    spec_names_by_package = {}
+    spec_names_by_package: dict[str, list[str]] = {}
 
     report = GiteaPackagesReport(
         config, binary_patterns_by_source, spec_names_by_package
