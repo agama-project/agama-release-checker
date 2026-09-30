@@ -38,7 +38,7 @@ of Bugzilla bugs.
 
 **Do not make permanent fixes or commit changes during this phase; your
 goal is to plan what should be done for each bug by updating
-`CVE-BUG-PLAN.md`.**
+`CVE-BUG-PLAN.yaml`.**
 
 #### 1. Analyze the Bug
 
@@ -87,20 +87,20 @@ determine the bug's relevance:
 
 #### 4. Document the Plan
 
-Update the `CVE-BUG-PLAN.md` file (create it in the root directory if it
+Update the `CVE-BUG-PLAN.yaml` file (create it in the root directory if it
 doesn't exist) with your findings for this specific bug.
 
 Include the following information in the plan for each bug:
 
--   **Bug ID:** (e.g., bsc#123456)
--   **CVE ID:** (e.g., CVE-2026-1234)
--   **Dependency:** (e.g., `shell-quote`)
--   **Kind:** `runtime` or `development`
--   **Current Version:** The version(s) found before the update.
--   **Target Version:** The safe version to update to.
--   **Status:** Note if it requires a normal fix, is "Already
+-   bug_id: (e.g., bsc#123456)
+-   cve_id: (e.g., CVE-2026-1234)
+-   dependency: (e.g., `shell-quote`)
+-   kind: `runtime` or `development`
+-   current_version: The version(s) found before the update.
+-   target_version: The safe version to update to.
+-   status: Note if it requires a normal fix, is "Already
     processed", "Fixed by accident", or "Spurious".
--   **Proposed Fix:**
+-   proposed_fix:
     -   *Normal:* The specific action required (e.g., "Run
         `npm update shell-quote`" or "Add to overrides").
     -   *Already processed:* "Skip, already processed."
@@ -124,7 +124,7 @@ TIMESTAMP_PLACEHOLDER - <your_name> <your_email>
 
 ### Phase 2: Execute and Commit (After User Approval)
 
-Once the `CVE-BUG-PLAN.md` is fully assembled, **stop and ask the user
+Once the `CVE-BUG-PLAN.yaml` is fully assembled, **stop and ask the user
 for approval**.
 
 After the user approves the plan, execute the steps for each bug one by
