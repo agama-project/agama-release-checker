@@ -4,6 +4,9 @@ This document explains how to release a new version of Agama from the `master`
 branch and submit it to openSUSE Factory and to the next SLE release. It is
 meant to be enough for any teammate to do a submission on their own.
 
+Updates for already released SLE versions (e.g., SLE 16.0 or 16.1) follow a
+different flow, described in [Maintenance Updates for SLE](#maintenance-updates-for-sle).
+
 ## Big Picture
 
 ### Packages
@@ -342,3 +345,135 @@ does not create a duplicate.
 
 Check that the pull requests were created in src.suse.de, and follow the review
 until they are accepted.
+
+## Maintenance Updates for SLE
+
+SLES products are updated with the so-called Quarterly Updates. The changes for
+a Quarterly Update are sent to a specific branch of the `pool/<package>`
+repositories at src.suse.de, one per SLE version. The sources come from a
+maintenance branch of the agama repository, not from `master`.
+
+### Maintenance Streams
+
+| SLE  | agama branch | OBS project                                    | IBS project                             | pool branch | products/SLES branch |
+|------|--------------|------------------------------------------------|-----------------------------------------|-------------|----------------------|
+| 16.0 | `SLE-16`     | `systemsmanagement:Agama:Maintenance:SLE-16.0` | `Devel:YaST:Agama:Maintenance:SLE-16`   | `slfo-1.2`  | `16.0`               |
+| 16.1 | `SLE-16.1`   | `systemsmanagement:Agama:Maintenance:SLE-16.1` | `Devel:YaST:Agama:Maintenance:SLE-16.1` | `slfo-1.3`  | `16.1`               |
+
+Note that for 16.0 the IBS project is named `SLE-16`, while the OBS project is
+named `SLE-16.0`.
+
+Each IBS project links to the OBS project of the same stream. Each agama branch
+is always associated with its OBS project.
+
+The differences with a regular release are:
+
+* There is no submission to Factory.
+* There is no tag and no release pull request.
+* The sources come from the maintenance branch of the agama repository.
+
+~~~text
+ GitHub agama (branch SLE-16.1)
+        |
+        | branch2obs.sh
+        v
+  OBS Maintenance
+  (systemsmanagement:Agama:Maintenance:SLE-16.1)
+        |
+        | linked
+        v
+  IBS Maintenance  --- copy sources + PR --->  src.suse.de  pool/<package>  (slfo-1.3)
+  (Devel:YaST:Agama:Maintenance:SLE-16.1)
+
+  GitHub agama (branch SLE-16.1) --- make sles + PR -->  src.suse.de  products/SLES (16.1)
+~~~
+
+The following steps use SLE 16.1 as the example. For another stream, use the
+values from the table above. The [prerequisites](#prerequisites) are the same as
+for a regular release.
+
+### 1. Commit a New Revision to OBS
+
+Commit the packages to the OBS maintenance project of the stream using the
+`branch2obs.sh` script, from the maintenance branch:
+
+~~~bash
+git switch SLE-16.1
+git pull
+cd devel
+./branch2obs.sh -p systemsmanagement:Agama:Maintenance:SLE-16.1
+~~~
+
+Unlike in a regular release, you do not have to set the target project back
+afterwards.
+
+Check that the packages build in the OBS project and in the linked IBS project
+(the IBS project may take a while to be updated). No output means no failures:
+
+~~~bash
+osc results --failed systemsmanagement:Agama:Maintenance:SLE-16.1
+iosc results --failed Devel:YaST:Agama:Maintenance:SLE-16.1
+~~~
+
+### 2. Submit the RPM Packages to SLE
+
+Once the IBS project is updated, send the changes of the 4 RPM packages to the
+`pool` repositories with the [agama-release-maker](README.md#release-maker)
+script. The setup is the same as in [Automatic Submission](#setup).
+
+Prepare a configuration file for the stream (e.g., *maker-config-sle-161.yml*):
+
+~~~yaml
+package_submissions:
+  agama: {}
+  agama-products: {}
+  agama-web-ui: {}
+  rubygem-agama-yast: {}
+
+# there is no submission to OBS in maintenance, but the section is required
+obs_submissions:
+  source_project: "nosuchproject"
+  target_project: "nosuchproject"
+
+gitea_submissions:
+  source_project: "Devel:YaST:Agama:Maintenance:SLE-16.1"
+  # your username in Gitea
+  fork_org: USERNAME
+  target_org: pool
+  target_branch: slfo-1.3
+~~~
+
+For another stream, change `source_project` and `target_branch` according to the
+table above.
+
+Send the changes:
+
+~~~bash
+./agama-release-maker -c maker-config-sle-161.yml gitea-submit
+~~~
+
+The script creates a pull request for every package. If you prefer to do it by
+hand, follow the [step 6](#6-submit-the-rpm-packages-to-sle) of the regular
+release, using the IBS project and the `pool` branch of the stream.
+
+### 3. Submit the ISO Sources to SLE
+
+The `agama-installer` sources have to be submitted manually. Follow the
+[step 7](#7-submit-the-iso-sources-to-sle) of the regular release with these
+differences:
+
+* Switch the agama checkout to the maintenance branch (e.g., `git switch
+  SLE-16.1`) before running `make clean sles`.
+* Create the PR against the branch of `products/SLES` of the stream (e.g.,
+  `16.1`).
+
+> **Note:** *agama-release-maker* is able to submit the ISO sources
+> (`gitea_submit` of `agama-installer`), but it does not support the
+> `source_branch` option yet, which is needed to build from a maintenance
+> branch.
+
+### 4. Check the Result
+
+Check that the pull requests were created in src.suse.de, one for each of the
+4 RPM packages and one for the ISO sources, and follow the review until they are
+accepted.
