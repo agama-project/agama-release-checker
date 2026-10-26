@@ -38,7 +38,7 @@ the commit offset since the tag and the last commit hash (e.g.,
     For example, if `rust/` changes, then only `agama` is committed. See for
     example [obs-staging-rust.yml](https://github.com/agama-project/agama/blob/master/.github/workflows/obs-staging-rust.yml).
 * [systemsmanagement:Agama:Release](https://build.opensuse.org/project/show/systemsmanagement:Agama:Release) (OBS)
-  * Contains the latest sources released to Factory.
+  * Contains the latest sources sent to Factory.
   * The Factory submit requests are created from this project.
 * [Devel:YaST:Agama:Release](https://build.suse.de/project/show/Devel:YaST:Agama:Release) (IBS)
   * Links to *systemsmanagement:Agama:Release*.
@@ -152,7 +152,7 @@ cd devel
 ~~~
 
 The previous call changes the target project of `master`, so set it back to
-*devel* again:
+*devel* again once all the packages are committed to the `Release` project:
 
 ~~~bash
 ./branch2obs.sh -p systemsmanagement:Agama:Devel
@@ -197,7 +197,11 @@ Example for the `agama` package:
 osc --api https://api.suse.de co Devel:YaST:Agama:Release agama
 git clone gitea@src.suse.de:USERNAME/agama.git
 cd agama
+# Ensure your fork is up-to-date
+git remote add upstream gitea@src.suse.de:pool/agama.git
+git fetch upstream
 git checkout slfo-main
+git merge upstream/slfo-main
 git checkout -b slfo-main-update
 cd ..
 cp Devel\:YaST\:Agama\:Release/agama/* agama/
@@ -230,6 +234,11 @@ directory, and push it to a new branch:
 ~~~bash
 git clone gitea@src.suse.de:USERNAME/SLES.git
 cd SLES
+# Ensure your fork is is up-to-date
+git remote add upstream gitea@src.suse.de:products/SLES.git
+git fetch upstream
+git checkout 16.2
+git merge upstream/16.2
 git checkout -b agama-installer-update
 cp -r ../agama/live/dist/* agama-installer-SLES/
 git add .
@@ -405,7 +414,8 @@ cd devel
 ~~~
 
 Unlike in a regular release, you do not have to set the target project back
-afterwards.
+afterwards. The branch keeps configured to automatically commit a new OBS
+revision with every push.
 
 Check that the packages build in the OBS project and in the linked IBS project
 (the IBS project may take a while to be updated). No output means no failures:
