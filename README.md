@@ -36,6 +36,7 @@ between OBS projects or from OBS/Git to Gitea repositories, including
 synchronization and pull request creation.
 
 Run `./agama-release-maker --help` to see all options and subcommands.
+See [HOW_TO_RELEASE.md](HOW_TO_RELEASE.md) for the complete release process.
 
 Common options:
   -c, --config FILE   Specify the configuration file (default: maker-config-testing.yml)
