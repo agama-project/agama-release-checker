@@ -22,7 +22,7 @@ Agama delivers 5 packages to OBS from [its sources](https://github.com/agama-pro
 | `agama-installer`    | `live/`                     | ISO  | Factory, SLE (`products/SLES`) |
 
 Note that `agama-installer` is not an RPM that goes to the SLE `pool`
-repositories: its sources are generated and submitted to the `products/SLES`
+repositories: its sources are generated and submitted to a subdirectory in the `products/SLES`
 repository.
 
 The version of the packages is based on the latest GitHub tag (e.g., `v24`),
