@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 from pathlib import Path
-import yaml  # type: ignore
+import yaml  # type: ignore[import-untyped,unused-ignore]
 
 
 @dataclass
@@ -197,12 +197,26 @@ class GiteaSubmissionsConfig:
 
 
 @dataclass
+class ObsUpdateConfig:
+    """An upstream Git ref autosubmitted to an OBS project by the GitHub workflows.
+
+    E.g. the maintenance branch "SLE-16.1" and the project
+    "systemsmanagement:Agama:Maintenance:SLE-16.1".
+    """
+
+    ref: str
+    project: str
+
+
+@dataclass
 class MakerConfig:
     """Configuration for agama-release-maker."""
 
     package_submissions: dict[str, PackageSubmissionConfig]
-    obs_submissions: ObsSubmissionsConfig
     gitea_submissions: GiteaSubmissionsConfig
+    # None for maintenance updates, which are not submitted to Factory
+    obs_submissions: ObsSubmissionsConfig | None = None
+    obs_update: ObsUpdateConfig | None = None
 
     @classmethod
     def from_file(cls, config_path: Path) -> "MakerConfig":
@@ -223,6 +237,9 @@ class MakerConfig:
             data["gitea_submissions"] = GiteaSubmissionsConfig(
                 **data["gitea_submissions"]
             )
+
+        if data.get("obs_update"):
+            data["obs_update"] = ObsUpdateConfig(**data["obs_update"])
 
         return cls(**data)
 
