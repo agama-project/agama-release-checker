@@ -268,3 +268,87 @@ def test_obs_update_timeout():
     with pytest.raises(RuntimeError, match="Timeout"):
         obs.update("v25", "Release", push=True)
     assert state["mapping"] == {}
+
+
+def test_next_version():
+    tags = (
+        "a\trefs/tags/v24\nb\trefs/tags/v24^{}\nc\trefs/tags/v25\n"
+        "d\trefs/tags/v25^{}\ne\trefs/tags/v9\n"
+    )
+    run = MagicMock(return_value=completed(tags))
+    assert UpstreamRelease(run).next_version() == "26"
+
+
+def test_last_released_version():
+    prs = [
+        {"headRefName": "release-24", "mergedAt": "2026-06-01T00:00:00Z"},
+        {"headRefName": "release-25", "mergedAt": "2026-09-01T00:00:00Z"},
+        {"headRefName": "release-notes", "mergedAt": "2026-10-01T00:00:00Z"},
+    ]
+    run = MagicMock(return_value=completed(json.dumps(prs)))
+    assert UpstreamRelease(run).last_released_version() == "25"
+
+
+def test_remote_tag_commit_annotated():
+    out = "tagobj\trefs/tags/v25\nabc123\trefs/tags/v25^{}\n"
+    run = MagicMock(return_value=completed(out))
+    assert UpstreamRelease(run).remote_tag_commit("v25") == "abc123"
+
+
+def tag_runner(tmp_path: Path, ls_remote: str) -> MagicMock:
+    """fake_runner answering ls-remote with the given output."""
+    base = fake_runner(tmp_path, {"view": MERGED, "list": "[]"})
+
+    def run(cmd, cwd=None, input=None):
+        if cmd[:2] == ["git", "ls-remote"]:
+            return completed(ls_remote)
+        return base(cmd, cwd=cwd, input=input)
+
+    return MagicMock(side_effect=run)
+
+
+def test_tag_release_already_tagged(tmp_path):
+    run = tag_runner(tmp_path, "x\trefs/tags/v25\nabc123\trefs/tags/v25^{}\n")
+
+    assert UpstreamRelease(run).tag_release("25", push=True)
+    assert not any(c[:2] == ["git", "tag"] for c in commands(run))
+
+
+def test_tag_release_tag_elsewhere(tmp_path):
+    run = tag_runner(tmp_path, "x\trefs/tags/v25\nother\trefs/tags/v25^{}\n")
+    with pytest.raises(RuntimeError, match="not to the merge commit"):
+        UpstreamRelease(run).tag_release("25", push=True)
+
+
+@patch("agama_release_checker.upstream.tempfile.TemporaryDirectory")
+def test_publish_release_dry_run(mock_tmp, tmp_path):
+    mock_tmp.return_value.name = str(tmp_path)
+    run = tag_runner(tmp_path, "")
+    updater = MagicMock()
+
+    UpstreamRelease(run).publish_release(updater, "Release", version="25")
+
+    updater.update.assert_not_called()
+    assert not any(c[:2] == ["git", "push"] for c in commands(run))
+
+
+@patch("agama_release_checker.upstream.tempfile.TemporaryDirectory")
+def test_publish_release_push(mock_tmp, tmp_path):
+    mock_tmp.return_value.name = str(tmp_path)
+    run = tag_runner(tmp_path, "")
+    updater = MagicMock()
+
+    UpstreamRelease(run).publish_release(updater, "Release", version="25", push=True)
+
+    assert ["git", "push", "origin", "v25"] in commands(run)
+    updater.update.assert_called_once_with("v25", "Release", True)
+
+
+def test_publish_release_retry_after_tagging(tmp_path):
+    """Repeating publish-release reuses the existing tag."""
+    run = tag_runner(tmp_path, "x\trefs/tags/v25\nabc123\trefs/tags/v25^{}\n")
+    updater = MagicMock()
+
+    UpstreamRelease(run).publish_release(updater, "Release", version="25", push=True)
+
+    updater.update.assert_called_once_with("v25", "Release", True)

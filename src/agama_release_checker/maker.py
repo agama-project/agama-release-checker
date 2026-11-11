@@ -731,28 +731,29 @@ def main() -> None:
     parser_bump = subparsers.add_parser(
         "bump-version", help="Create the upstream release PR for a version."
     )
-    parser_bump.add_argument("version", help="The new version, e.g. 25")
+    parser_bump.add_argument(
+        "version", nargs="?", help="The new version (default: latest tag + 1)"
+    )
     parser_bump.add_argument("--push", action="store_true", help=push_help)
-
-    parser_tag = subparsers.add_parser(
-        "tag-release", help="Tag the merged upstream release PR."
-    )
-    parser_tag.add_argument("version", help="The released version, e.g. 25")
-    parser_tag.add_argument("--push", action="store_true", help=push_help)
-    parser_tag.add_argument(
-        "--force", action="store_true", help="Tag even if CI did not pass."
-    )
 
     parser_publish = subparsers.add_parser(
         "publish-release",
-        help=f"Commit the tagged version to {RELEASE_PROJECT} via the GitHub workflows.",
+        help="Tag the merged release PR and commit the tag to "
+        f"{RELEASE_PROJECT} via the GitHub workflows.",
     )
-    parser_publish.add_argument("version", help="The released version, e.g. 25")
+    parser_publish.add_argument(
+        "version",
+        nargs="?",
+        help="The released version (default: the last merged release PR)",
+    )
     parser_publish.add_argument(
         "--ref",
         help="Git ref to build (default: the vVERSION tag; 'master' is the manual way)",
     )
     parser_publish.add_argument("--push", action="store_true", help=push_help)
+    parser_publish.add_argument(
+        "--force", action="store_true", help="Tag even if the CI did not pass."
+    )
 
     parser_update = subparsers.add_parser(
         "obs-update",
@@ -807,13 +808,14 @@ def run_subcommand(
         maker.submit_to_gitea(args.packages)
     elif args.command == "bump-version":
         UpstreamRelease(maker._run_command).bump_version(args.version, args.push)
-    elif args.command == "tag-release":
-        UpstreamRelease(maker._run_command).tag_release(
-            args.version, args.push, args.force
-        )
     elif args.command == "publish-release":
-        ObsUpdater(maker._run_command).update(
-            args.ref or f"v{args.version}", RELEASE_PROJECT, args.push
+        UpstreamRelease(maker._run_command).publish_release(
+            ObsUpdater(maker._run_command),
+            RELEASE_PROJECT,
+            version=args.version,
+            push=args.push,
+            force=args.force,
+            ref=args.ref,
         )
     elif args.command == "obs-update":
         if not config.obs_update:

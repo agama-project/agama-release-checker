@@ -4,8 +4,6 @@ package_submissions:
   agama-products: {}
   agama-web-ui: {}
   rubygem-agama-yast: {}
-# a RPM, from agama-project/integration-tests
-  agama-integration-tests: {}
 # also from the main repo, but produces an ISO
   agama-installer:
     gitea_submit:

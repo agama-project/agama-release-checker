@@ -142,7 +142,8 @@ class UpstreamRelease:
 
     Responsibilities:
     - bumping the version (.changes, kiwi, Gemfile.lock) in a release PR
-    - tagging the merged release PR once its CI has passed
+    - tagging the merged release PR once its CI has passed and committing
+      the tag to the Release OBS project
 
     Works in a fresh temporary clone. Nothing is pushed unless `push` is set.
     """
@@ -172,6 +173,73 @@ class UpstreamRelease:
             ["git", "clone", "--branch", self.base, self.repo, str(repo_dir)],
         )
         return repo_dir
+
+    @property
+    def _https_url(self) -> str:
+        """The read-only URL of the GitHub repo (no SSH key needed)."""
+        return f"https://github.com/{self.github_repo}.git"
+
+    def latest_version(self) -> int:
+        """Returns the highest N of the vN tags upstream."""
+        res = self.run(["git", "ls-remote", "--tags", self._https_url, "v*"])
+        versions = [
+            int(m.group(1))
+            for m in re.finditer(r"refs/tags/v(\d+)$", res.stdout, re.MULTILINE)
+        ]
+        if not versions:
+            raise RuntimeError(f"No vN tags in {self.github_repo}")
+        return max(versions)
+
+    def next_version(self) -> str:
+        """Returns the version following the latest tag."""
+        return str(self.latest_version() + 1)
+
+    def last_released_version(self) -> str:
+        """Returns N of the most recently merged release-N pull request."""
+        res = self.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                self.github_repo,
+                "--state",
+                "merged",
+                "--search",
+                "Release version in:title",
+                "--limit",
+                "20",
+                "--json",
+                "headRefName,mergedAt",
+            ]
+        )
+        prs = [
+            (pr["mergedAt"], m.group(1))
+            for pr in json.loads(res.stdout)
+            if (m := re.fullmatch(r"release-(\d+)", pr["headRefName"]))
+        ]
+        if not prs:
+            raise RuntimeError("No merged release-N pull request found")
+        return max(prs)[1]
+
+    def remote_tag_commit(self, tag: str) -> str | None:
+        """Returns the commit a tag upstream points to, None if it does not exist."""
+        res = self.run(
+            [
+                "git",
+                "ls-remote",
+                self._https_url,
+                f"refs/tags/{tag}",
+                f"refs/tags/{tag}^{{}}",
+            ]
+        )
+        refs: dict[str, str] = {}
+        for line in res.stdout.splitlines():
+            if "\t" in line:
+                sha, ref = line.split("\t", 1)
+                refs[ref] = sha
+        # an annotated tag: the peeled ^{} entry is the commit
+        return refs.get(f"refs/tags/{tag}^{{}}") or refs.get(f"refs/tags/{tag}")
 
     def _git_config(self, repo_dir: Path, key: str) -> str:
         """Returns a git config value."""
@@ -213,11 +281,14 @@ class UpstreamRelease:
         lock = repo_dir / GEMFILE_LOCK
         lock.write_text(bump_gemfile_lock(lock.read_text(), version))
 
-    def bump_version(self, version: str, push: bool = False) -> None:
+    def bump_version(self, version: str | None = None, push: bool = False) -> None:
         """Creates the release commit and, with `push`, the release PR.
 
-        Without `push`, the temporary clone is kept for inspection.
+        The version defaults to the one following the latest tag. Without
+        `push`, the temporary clone is kept for inspection.
         """
+        version = version or self.next_version()
+        logging.info(f"Preparing version {version}")
         branch = self.branch_name(version)
         if push and self._open_pr_exists(branch):
             return
@@ -316,9 +387,23 @@ class UpstreamRelease:
 
     def tag_release(
         self, version: str, push: bool = False, force: bool = False
-    ) -> None:
-        """Tags the merged release PR with a signed tag and, with `push`, pushes it."""
+    ) -> bool:
+        """Tags the merged release PR with a signed tag and, with `push`, pushes it.
+
+        Does nothing if the tag already points to the merge commit (e.g., when
+        repeating publish_release). Returns whether the tag exists upstream.
+        """
         sha = self.merged_commit(version)
+        tag = f"v{version}"
+        tagged = self.remote_tag_commit(tag)
+        if tagged == sha:
+            logging.info(f"{tag} already points to {sha}")
+            return True
+        if tagged:
+            raise RuntimeError(
+                f"{tag} points to {tagged}, not to the merge commit {sha}"
+            )
+
         failed = self.failed_runs(sha)
         if failed:
             message = f"CI did not pass for {sha}: {', '.join(failed)}"
@@ -330,17 +415,40 @@ class UpstreamRelease:
             prefix="agama-release-maker-", delete=False
         )
         repo_dir = self._clone(Path(temp_obj.name))
-        tag = f"v{version}"
         self.run(
             ["git", "tag", "-s", tag, "-m", f"Version {version}", sha], cwd=repo_dir
         )
 
         if not push:
             logging.info(f"Dry run, not pushing tag {tag}. Inspect {repo_dir}")
-            return
+            return False
 
         self.run(["git", "push", "origin", tag], cwd=repo_dir)
         temp_obj.cleanup()
+        return True
+
+    def publish_release(
+        self,
+        updater: "ObsUpdater",
+        project: str,
+        version: str | None = None,
+        push: bool = False,
+        force: bool = False,
+        ref: str | None = None,
+    ) -> None:
+        """Tags the merged release PR and commits the tag to the OBS project.
+
+        The version defaults to the one of the last merged release PR. `ref`
+        builds another Git ref (e.g. "master") instead of the tag.
+        """
+        version = version or self.last_released_version()
+        logging.info(f"Publishing version {version}")
+        tagged = self.tag_release(version, push, force)
+        ref = ref or f"v{version}"
+        if not tagged and ref == f"v{version}":
+            logging.info(f"Dry run, would run the OBS workflows on {ref} for {project}")
+            return
+        updater.update(ref, project, push)
 
 
 class ObsUpdater:

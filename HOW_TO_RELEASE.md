@@ -91,11 +91,10 @@ You only need to do this once:
   * [pool/agama-web-ui](https://src.suse.de/pool/agama-web-ui)
   * [pool/rubygem-agama-yast](https://src.suse.de/pool/rubygem-agama-yast)
   * [pool/agama-products](https://src.suse.de/pool/agama-products)
-  * [pool/agama-integration-tests](https://src.suse.de/pool/agama-integration-tests)
-    (also submitted by the *agama-release-maker* configuration files)
   * [products/SLES](https://src.suse.de/products/SLES)
 
-  If you already have the forks, make sure that they are up-to-date.
+  If you already have the forks, make sure that they are up-to-date (only
+  needed for the manual process, see [Running the Script](#running-the-script)).
 * A checkout of the agama repository.
 
 In the following sections, we use `v25` as the example version and `USERNAME`
@@ -340,23 +339,26 @@ run unless you add `--push`, so you can check what would happen first:
 ~~~bash
 # 1. Bump the versions, create the release-25 branch and the PR. The
 #    description lists the PRs merged since the previous tag.
-./agama-release-maker bump-version 25 --push
+./agama-release-maker bump-version --push
 # review the PR, wait for the CI and merge it
 
-# 2. Tag the merge commit of the PR (signed tag v25). It refuses if the CI
-#    of that commit did not pass (use --force to override).
-./agama-release-maker tag-release 25 --push
-
-# 3. Commit the tagged sources to systemsmanagement:Agama:Release
-./agama-release-maker publish-release 25 --push
+# 2 and 3. Tag the merge commit of the PR (signed tag v25) and commit the
+#    tagged sources to systemsmanagement:Agama:Release
+./agama-release-maker publish-release --push
 
 # 4. Check the builds in the OBS and IBS Release projects (repeat until they
 #    finish; the IBS project may take a while to be updated)
 ./agama-release-maker -c maker-config-production.yml check-builds
 ~~~
 
-`publish-release` does the same as `branch2obs.sh` in
-[step 3](#3-update-the-release-project): it maps the Git ref to the *Release*
+The version is optional: `bump-version` uses the one following the latest tag
+(e.g., `25` after `v24`) and `publish-release` the one of the last merged
+release PR. You can pass it explicitly, e.g., `bump-version 25`.
+
+`publish-release` refuses to tag if the CI of the merge commit did not pass (use
+`--force` to override). If the tag already exists on the merge commit (e.g.,
+when you repeat the command after a failure), it is reused. Then it does the
+same as `branch2obs.sh` in [step 3](#3-update-the-release-project): it maps the Git ref to the *Release*
 project in the `OBS_PROJECTS` GitHub variable and runs the OBS GitHub
 workflows. It builds the `v25` tag instead of `master`, so the result does not
 depend on what was merged after the tag. When the workflows finish, the mapping
@@ -381,6 +383,11 @@ Use `-v` for verbose output. The pull requests are created from your forks: the
 script uses the user of your `tea` login for src.suse.de, unless `fork_org` is
 set in the configuration or `--fork-org USERNAME` is given (before the
 subcommand). Before pushing anything, it checks that all the forks exist.
+
+The forks do not need to be up-to-date: the script creates the branch of the
+pull request from the target branch of the original repository (e.g.,
+`pool/agama`, `slfo-1.2`) and force-pushes it to the fork. Other branches of the
+fork are not touched.
 
 The script creates the submit requests and the pull requests for every package.
 If an open PR from the same branch already exists, it does not create a
