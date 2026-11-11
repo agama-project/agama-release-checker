@@ -4,8 +4,6 @@ package_submissions:
   agama-products: {}
   agama-web-ui: {}
   rubygem-agama-yast: {}
-# a RPM, from agama-project/integration-tests
-  agama-integration-tests: {}
 # also from the main repo, but produces an ISO
   agama-installer:
     gitea_submit:
@@ -14,7 +12,8 @@ package_submissions:
       source_dir: "live/dist"
       target_repo: "gitea@src.suse.de:products/SLES.git"
       target_dir: "agama-installer-SLES"
-      target_branch: "16.1"
+      # the products/SLES branch of the next SLE release
+      target_branch: "16.2"
 
 obs_submissions:
   source_project: "systemsmanagement:Agama:Release"
@@ -22,6 +21,6 @@ obs_submissions:
 
 gitea_submissions:
   source_project: "Devel:YaST:Agama:Release"
-  fork_org: mvidner
+  # fork_org: USERNAME  # optional, defaults to the user of your tea login
   target_org: pool
   target_branch: slfo-main

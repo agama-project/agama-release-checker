@@ -45,3 +45,9 @@ strict = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+markers = [
+    "real_tea_login: do not stub ReleaseMaker._tea_login",
+    "real_fork_check: do not stub ReleaseMaker._missing_forks",
+]

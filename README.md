@@ -51,13 +51,39 @@ Subcommands:
   based on the configuration.
   - **Robust PR detection**: Automatically checks for existing open PRs from the
     same branch to avoid duplicate submissions.
-  - **Forking support**: If a `fork_org` is specified in the configuration, the
-    tool pushes to a fork instead of the target repository. This is useful when
-    direct write access is restricted.
+  - **Forking support**: The tool pushes to a fork of the target repository,
+    owned by `fork_org` from the configuration or, if not set, by the user of
+    the `tea` login for the Gitea host. All the forks are checked before
+    pushing anything.
+  - **Summary**: At the end (also after an error) it prints the outcome of every
+    package, with the URLs of the pull requests.
   - **Custom strategy**: For packages with a `gitea_submit` strategy in the
     configuration, it performs a custom submission from an upstream Git
     repository instead of OBS. This allows building or pre-processing source code
     (e.g., for `agama-installer`) before syncing it to a subdirectory in Gitea.
+    An optional `source_branch` (a branch or a tag) selects what to build.
+- `bump-version [VERSION]`: In a temporary clone of agama-project/agama, creates
+  a `release-VERSION` branch that adds a "Version VERSION" entry to the
+  `.changes` files and updates the kiwi and `Gemfile.lock` versions.
+  With `--push`, pushes it and opens a GitHub PR listing the PRs merged since
+  the previous tag. The version defaults to the latest `vN` tag + 1.
+- `publish-release [VERSION]`: Checks that the release PR is merged and its CI
+  passed, makes a signed `vVERSION` tag on the merge commit (reusing it if it
+  already exists there) and commits it to
+  `systemsmanagement:Agama:Release` like `devel/branch2obs.sh` does: maps the tag
+  in the `OBS_PROJECTS` GitHub variable, runs the OBS GitHub workflows, waits for
+  them and removes the mapping again. `--ref` builds another ref (e.g. `master`).
+  The version defaults to the one of the last merged release PR.
+- `obs-update`: Same for the `obs_update` section of the configuration
+  (a maintenance branch and its OBS project); the mapping is kept.
+- `check-builds`: Reports failed builds in the OBS project (`obs_update.project`
+  or `obs_submissions.source_project`) and in the IBS
+  `gitea_submissions.source_project`. Exits with 1 on failures.
+
+`bump-version`, `publish-release` and `obs-update` only do a dry
+run unless `--push` is given. `--fork-org USERNAME` overrides `fork_org` of the
+configuration. On errors, the script prints a short message (use `-v` for the
+details) and exits with 1. `obs_submissions` is optional (not needed for maintenance updates).
 
 #### Requirements
 

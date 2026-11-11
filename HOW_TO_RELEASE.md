@@ -93,7 +93,8 @@ You only need to do this once:
   * [pool/agama-products](https://src.suse.de/pool/agama-products)
   * [products/SLES](https://src.suse.de/products/SLES)
 
-  If you already have the forks, make sure that they are up-to-date.
+  If you already have the forks, make sure that they are up-to-date (only
+  needed for the manual process, see [Running the Script](#running-the-script)).
 * A checkout of the agama repository.
 
 In the following sections, we use `v25` as the example version and `USERNAME`
@@ -252,10 +253,10 @@ if you have any doubt.
 
 ## Automatic Submission
 
-Steps 5, 6 and 7 (Factory, SLE packages and ISO sources) can be done
-automatically with the
-[agama-release-maker](README.md#release-maker) script. Steps 1 to 4 are still
-manual: the script expects the *Release* projects to be up-to-date.
+All the steps of the manual process can be done with the
+[agama-release-maker](README.md#release-maker) script. You still decide when to
+go on with the next step (e.g., after the release PR is merged or when the
+packages are built).
 
 ### Setup
 
@@ -312,8 +313,8 @@ obs_submissions:
 
 gitea_submissions:
   source_project: "Devel:YaST:Agama:Release"
-  # your username in Gitea
-  fork_org: USERNAME
+  # optional: your username in Gitea, by default the user of your tea login
+  # fork_org: USERNAME
   target_org: pool
   target_branch: slfo-main
 ~~~
@@ -326,13 +327,45 @@ gitea_submissions:
 * `gitea_submissions` defines the submission of the RPM packages to the `pool`
   repositories (step 6).
 
-What you have to adapt for each release: `fork_org` (your user name) and the
-`target_branch` of `agama-installer` (the branch of `products/SLES` of the next
+What you have to adapt for each release: the `target_branch` of
+`agama-installer` (the branch of `products/SLES` of the next
 SLE release).
 
 ### Running the Script
 
-Submit everything:
+The steps 1 to 4 do not need a configuration file. Each of them only does a dry
+run unless you add `--push`, so you can check what would happen first:
+
+~~~bash
+# 1. Bump the versions, create the release-25 branch and the PR. The
+#    description lists the PRs merged since the previous tag.
+./agama-release-maker bump-version --push
+# review the PR, wait for the CI and merge it
+
+# 2 and 3. Tag the merge commit of the PR (signed tag v25) and commit the
+#    tagged sources to systemsmanagement:Agama:Release
+./agama-release-maker publish-release --push
+
+# 4. Check the builds in the OBS and IBS Release projects (repeat until they
+#    finish; the IBS project may take a while to be updated)
+./agama-release-maker -c maker-config-production.yml check-builds
+~~~
+
+The version is optional: `bump-version` uses the one following the latest tag
+(e.g., `25` after `v24`) and `publish-release` the one of the last merged
+release PR. You can pass it explicitly, e.g., `bump-version 25`.
+
+`publish-release` refuses to tag if the CI of the merge commit did not pass (use
+`--force` to override). If the tag already exists on the merge commit (e.g.,
+when you repeat the command after a failure), it is reused. Then it does the
+same as `branch2obs.sh` in [step 3](#3-update-the-release-project): it maps the Git ref to the *Release*
+project in the `OBS_PROJECTS` GitHub variable and runs the OBS GitHub
+workflows. It builds the `v25` tag instead of `master`, so the result does not
+depend on what was merged after the tag. When the workflows finish, the mapping
+is removed again, so there is no need to set it back manually. Use
+`--ref master` to build `master` as in the manual process.
+
+Then submit to Factory and SLE (steps 5, 6 and 7). Submit everything:
 
 ~~~bash
 ./agama-release-maker -c maker-config-production.yml
@@ -346,9 +379,22 @@ to Factory first, and if everything is OK, then to Gitea:
 ./agama-release-maker -c maker-config-production.yml gitea-submit
 ~~~
 
-Use `-v` for verbose output. The script creates the submit requests and the pull
-requests for every package. If an open PR from the same branch already exists, it
-does not create a duplicate.
+Use `-v` for verbose output. The pull requests are created from your forks: the
+script uses the user of your `tea` login for src.suse.de, unless `fork_org` is
+set in the configuration or `--fork-org USERNAME` is given (before the
+subcommand). Before pushing anything, it checks that all the forks exist.
+
+The forks do not need to be up-to-date: the script creates the branch of the
+pull request from the target branch of the original repository (e.g.,
+`pool/agama`, `slfo-1.2`) and force-pushes it to the fork. Other branches of the
+fork are not touched.
+
+The script creates the submit requests and the pull requests for every package.
+If an open PR from the same branch already exists, it does not create a
+duplicate. At the end, it prints a summary with the outcome of every package
+(e.g., `PR created` with its URL, `PR exists` or `no changes`), also when it
+stops because of an error. If it stops, fix the problem and run it again: the
+packages already submitted are skipped.
 
 ### After Running the Script
 
@@ -401,6 +447,18 @@ The following steps use SLE 16.1 as the example. For another stream, use the
 values from the table above. The [prerequisites](#prerequisites) are the same as
 for a regular release.
 
+The [agama-release-maker](README.md#release-maker) script can do all the steps
+with the configuration file of the stream (*maker-config-sle-16.yml* for 16.0,
+*maker-config-sle-161.yml* for 16.1):
+
+~~~bash
+./agama-release-maker -c maker-config-sle-161.yml obs-update --push
+./agama-release-maker -c maker-config-sle-161.yml check-builds
+./agama-release-maker -c maker-config-sle-161.yml gitea-submit
+~~~
+
+The details of each step follow.
+
 ### 1. Commit a New Revision to OBS
 
 Commit the packages to the OBS maintenance project of the stream using the
@@ -417,6 +475,10 @@ Unlike in a regular release, you do not have to set the target project back
 afterwards. The branch keeps configured to automatically commit a new OBS
 revision with every push.
 
+`agama-release-maker obs-update --push` does the same: it runs the OBS GitHub
+workflows on the `obs_update.ref` branch of the configuration, waits for them
+and keeps the branch mapped to the `obs_update.project` OBS project.
+
 Check that the packages build in the OBS project and in the linked IBS project
 (the IBS project may take a while to be updated). No output means no failures:
 
@@ -425,10 +487,12 @@ osc results --failed systemsmanagement:Agama:Maintenance:SLE-16.1
 iosc results --failed Devel:YaST:Agama:Maintenance:SLE-16.1
 ~~~
 
+Or with `agama-release-maker check-builds`, which checks both projects.
+
 ### 2. Submit the RPM Packages to SLE
 
-Once the IBS project is updated, send the changes of the 4 RPM packages to the
-`pool` repositories with the [agama-release-maker](README.md#release-maker)
+Once the IBS project is updated, send the changes of the 4 RPM packages (and
+the ISO sources, see the next step) to the `pool` repositories with the [agama-release-maker](README.md#release-maker)
 script. The setup is the same as in [Automatic Submission](#setup).
 
 Prepare a configuration file for the stream (e.g., *maker-config-sle-161.yml*):
@@ -439,22 +503,35 @@ package_submissions:
   agama-products: {}
   agama-web-ui: {}
   rubygem-agama-yast: {}
+  agama-installer:
+    gitea_submit:
+      source_repo: "https://github.com/agama-project/agama/"
+      # the maintenance branch of the agama repository
+      source_branch: "SLE-16.1"
+      source_run: "make -C live clean sles"
+      source_dir: "live/dist"
+      target_repo: "gitea@src.suse.de:products/SLES.git"
+      target_dir: "agama-installer-SLES"
+      # the products/SLES branch of the stream
+      target_branch: "16.1"
 
-# there is no submission to OBS in maintenance, but the section is required
-obs_submissions:
-  source_project: "nosuchproject"
-  target_project: "nosuchproject"
+# there is no obs_submissions section: no submission to Factory in maintenance
+
+# used by obs-update and check-builds
+obs_update:
+  ref: "SLE-16.1"
+  project: "systemsmanagement:Agama:Maintenance:SLE-16.1"
 
 gitea_submissions:
   source_project: "Devel:YaST:Agama:Maintenance:SLE-16.1"
-  # your username in Gitea
-  fork_org: USERNAME
+  # optional: your username in Gitea, by default the user of your tea login
+  # fork_org: USERNAME
   target_org: pool
   target_branch: slfo-1.3
 ~~~
 
-For another stream, change `source_project` and `target_branch` according to the
-table above.
+For another stream, change `source_branch`, the `target_branch`es, `ref`,
+`project` and `source_project` according to the table above.
 
 Send the changes:
 
@@ -462,13 +539,15 @@ Send the changes:
 ./agama-release-maker -c maker-config-sle-161.yml gitea-submit
 ~~~
 
-The script creates a pull request for every package. If you prefer to do it by
+The script creates a pull request for every package, including the ISO
+sources. If you prefer to do it by
 hand, follow the [step 6](#6-submit-the-rpm-packages-to-sle) of the regular
 release, using the IBS project and the `pool` branch of the stream.
 
 ### 3. Submit the ISO Sources to SLE
 
-The `agama-installer` sources have to be submitted manually. Follow the
+`gitea-submit` already submits the `agama-installer` sources, built from the
+`source_branch` of the configuration. To do it manually instead, follow the
 [step 7](#7-submit-the-iso-sources-to-sle) of the regular release with these
 differences:
 
@@ -476,11 +555,6 @@ differences:
   SLE-16.1`) before running `make clean sles`.
 * Create the PR against the branch of `products/SLES` of the stream (e.g.,
   `16.1`).
-
-> **Note:** *agama-release-maker* is able to submit the ISO sources
-> (`gitea_submit` of `agama-installer`), but it does not support the
-> `source_branch` option yet, which is needed to build from a maintenance
-> branch.
 
 ### 4. Check the Result
 
