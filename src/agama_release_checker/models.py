@@ -217,6 +217,8 @@ class MakerConfig:
     # None for maintenance updates, which are not submitted to Factory
     obs_submissions: ObsSubmissionsConfig | None = None
     obs_update: ObsUpdateConfig | None = None
+    # known failures not to wait for, e.g. "agama */ppc64le" (see BuildWaiter)
+    ignore_builds: list[str] = field(default_factory=list)
 
     @classmethod
     def from_file(cls, config_path: Path) -> "MakerConfig":

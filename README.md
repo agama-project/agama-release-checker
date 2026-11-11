@@ -76,11 +76,19 @@ Subcommands:
   The version defaults to the one of the last merged release PR.
 - `obs-update`: Same for the `obs_update` section of the configuration
   (a maintenance branch and its OBS project); the mapping is kept.
-- `check-builds`: Reports failed builds in the OBS project (`obs_update.project`
-  or `obs_submissions.source_project`) and in the IBS
-  `gitea_submissions.source_project`. Exits with 1 on failures.
+- `check-builds`: Checks the builds of the configured packages in the OBS
+  project (`obs_update.project` or `obs_submissions.source_project`) and in the
+  IBS `gitea_submissions.source_project`. Only builds of the current sources
+  count, so stale results (e.g., IBS not updated yet) are reported as pending.
+  Exits with 1 on failures. `--wait` waits until the builds finish.
+  `--ignore 'PACKAGE REPO/ARCH'` (shell wildcards, repeatable) and the
+  `ignore_builds` configuration list skip known failures.
+- `release [VERSION]`: Everything after merging the release PR: `publish-release`,
+  `check-builds --wait`, `obs-submit` and `gitea-submit`. Checks the Gitea
+  prerequisites (tools, forks) before tagging. Accepts `--ignore`, `--force`,
+  `--ref`, `--no-factory` and `--no-sle`.
 
-`bump-version`, `publish-release` and `obs-update` only do a dry
+`bump-version`, `publish-release`, `release` and `obs-update` only do a dry
 run unless `--push` is given. `--fork-org USERNAME` overrides `fork_org` of the
 configuration. On errors, the script prints a short message (use `-v` for the
 details) and exits with 1. `obs_submissions` is optional (not needed for maintenance updates).

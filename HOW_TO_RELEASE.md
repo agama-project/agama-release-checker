@@ -333,6 +333,35 @@ SLE release).
 
 ### Running the Script
 
+Once the release PR is merged, a single command does everything else (steps 2
+to 7): it tags the PR, commits the tag to the *Release* project, waits for the
+builds in OBS and IBS and submits to Factory and SLE:
+
+~~~bash
+./agama-release-maker bump-version --push
+# review the PR, wait for the CI and merge it
+./agama-release-maker -c maker-config-production.yml release --push
+~~~
+
+Without `--push`, `release` only checks the prerequisites (tools, forks, tag)
+and tells what it would do. The waiting can take hours; it gives up after 4
+hours, and you can repeat the command (the tag is reused and the submitted
+packages are skipped). Use `--no-factory` or `--no-sle` to skip a submission.
+
+A build counts as finished when the current sources have been built, so the
+results of the previous version are not taken for the new one (e.g., while the
+IBS project has not noticed the changed sources yet). If some build fails, the
+command stops before submitting anything. To ignore known failures, use
+`--ignore 'agama */ppc64le'` (repeatable) or list them under `ignore_builds` in
+the configuration file:
+
+~~~yaml
+ignore_builds:
+  - "agama */ppc64le"
+~~~
+
+The steps can also be run one by one, as described below.
+
 The steps 1 to 4 do not need a configuration file. Each of them only does a dry
 run unless you add `--push`, so you can check what would happen first:
 
@@ -346,9 +375,8 @@ run unless you add `--push`, so you can check what would happen first:
 #    tagged sources to systemsmanagement:Agama:Release
 ./agama-release-maker publish-release --push
 
-# 4. Check the builds in the OBS and IBS Release projects (repeat until they
-#    finish; the IBS project may take a while to be updated)
-./agama-release-maker -c maker-config-production.yml check-builds
+# 4. Wait for the builds of the packages in the OBS and IBS Release projects
+./agama-release-maker -c maker-config-production.yml check-builds --wait
 ~~~
 
 The version is optional: `bump-version` uses the one following the latest tag
@@ -365,14 +393,8 @@ depend on what was merged after the tag. When the workflows finish, the mapping
 is removed again, so there is no need to set it back manually. Use
 `--ref master` to build `master` as in the manual process.
 
-Then submit to Factory and SLE (steps 5, 6 and 7). Submit everything:
-
-~~~bash
-./agama-release-maker -c maker-config-production.yml
-~~~
-
-The script allows submitting to Factory and to Gitea separately. You can submit
-to Factory first, and if everything is OK, then to Gitea:
+Then submit to Factory and SLE (steps 5, 6 and 7). You can submit to Factory
+first, and if everything is OK, then to Gitea:
 
 ~~~bash
 ./agama-release-maker -c maker-config-production.yml obs-submit
@@ -453,7 +475,7 @@ with the configuration file of the stream (*maker-config-sle-16.yml* for 16.0,
 
 ~~~bash
 ./agama-release-maker -c maker-config-sle-161.yml obs-update --push
-./agama-release-maker -c maker-config-sle-161.yml check-builds
+./agama-release-maker -c maker-config-sle-161.yml check-builds --wait
 ./agama-release-maker -c maker-config-sle-161.yml gitea-submit
 ~~~
 
