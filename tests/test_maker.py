@@ -63,6 +63,7 @@ def mock_config():
         target_org="target_org",
         target_branch="target_branch",
     )
+    config.ignore_builds = []
     return config
 
 
@@ -499,37 +500,90 @@ def test_submit_to_gitea_custom_source_branch(mock_run, mock_copytree, mock_conf
     )
 
 
-@patch("agama_release_checker.maker.subprocess.run")
-def test_check_builds_ok(mock_run, mock_config):
-    """Verifies that check_builds checks the OBS and the IBS projects."""
+def test_build_check_projects(mock_config):
+    """The OBS project is obs_update.project or obs_submissions.source_project."""
     mock_config.obs_update = None
-    mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+    assert ReleaseMaker(mock_config).build_check_projects() == [
+        (None, "source_proj"),
+        ("https://api.suse.de", "source_proj"),
+    ]
+    mock_config.obs_update = ObsUpdateConfig(ref="SLE-16.1", project="maint_proj")
+    assert ReleaseMaker(mock_config).build_check_projects()[0] == (None, "maint_proj")
 
-    assert ReleaseMaker(mock_config).check_builds()
 
-    cmds = [call.args[0] for call in mock_run.call_args_list]
-    assert cmds == [
-        ["osc", "results", "--failed", "source_proj"],
-        ["osc", "-A", "https://api.suse.de", "results", "--failed", "source_proj"],
+@patch("agama_release_checker.maker.BuildWaiter")
+def test_check_builds(mock_waiter, mock_config):
+    """check_builds checks the configured packages, with the ignored builds."""
+    mock_config.obs_update = None
+    mock_config.ignore_builds = ["agama */ppc64le"]
+    mock_waiter.return_value.status.side_effect = [
+        ([], []),
+        (["pkg1 x/y (building)"], ["pkg2 x/z (failed)"]),
     ]
 
+    assert not ReleaseMaker(mock_config).check_builds(ignore=["pkg1 */s390x"])
 
-@patch("agama_release_checker.maker.subprocess.run")
-def test_check_builds_maintenance(mock_run, mock_config):
-    """Verifies that check_builds uses obs_update when there is no obs_submissions."""
-    mock_config.obs_submissions = None
-    mock_config.obs_update = ObsUpdateConfig(ref="SLE-16.1", project="maint_proj")
-    mock_run.return_value = MagicMock(
-        returncode=0, stdout="agama  SLE_16.1  x86_64  failed", stderr=""
+    assert mock_waiter.call_args.kwargs["ignore"] == ["agama */ppc64le", "pkg1 */s390x"]
+    mock_waiter.return_value.status.assert_any_call(
+        "https://api.suse.de", "source_proj", ["pkg1", "pkg2"]
     )
 
-    assert not ReleaseMaker(mock_config).check_builds()
-    assert mock_run.call_args_list[0].args[0] == [
-        "osc",
-        "results",
-        "--failed",
-        "maint_proj",
-    ]
+
+@patch("agama_release_checker.maker.BuildWaiter")
+def test_check_builds_wait(mock_waiter, mock_config):
+    mock_config.obs_update = None
+    assert ReleaseMaker(mock_config).check_builds(wait=True)
+    mock_waiter.return_value.wait.assert_called_once()
+
+
+@patch("agama_release_checker.maker.UpstreamRelease")
+@patch("agama_release_checker.maker.BuildWaiter")
+def test_release_dry_run(mock_waiter, mock_upstream, mock_config):
+    """Without push, only the publishing is (dry) run."""
+    mock_config.obs_update = None
+    maker = ReleaseMaker(mock_config)
+    maker.check_gitea_prerequisites = MagicMock()  # type: ignore[method-assign]
+    maker.submit_to_obs = MagicMock()  # type: ignore[method-assign]
+
+    maker.release()
+
+    maker.check_gitea_prerequisites.assert_called_once()
+    mock_upstream.return_value.publish_release.assert_called_once()
+    mock_waiter.return_value.wait.assert_not_called()
+    maker.submit_to_obs.assert_not_called()
+
+
+@patch("agama_release_checker.maker.UpstreamRelease")
+@patch("agama_release_checker.maker.BuildWaiter")
+def test_release_push(mock_waiter, mock_upstream, mock_config):
+    """With push: publish, wait for the builds, submit to Factory and SLE."""
+    mock_config.obs_update = None
+    maker = ReleaseMaker(mock_config)
+    calls = []
+    maker.check_gitea_prerequisites = MagicMock()  # type: ignore[method-assign]
+    mock_upstream.return_value.publish_release.side_effect = (
+        lambda *a, **k: calls.append("publish")
+    )
+    mock_waiter.return_value.wait.side_effect = lambda *a: calls.append("wait")
+    maker.submit_to_obs = MagicMock(  # type: ignore[method-assign]
+        side_effect=lambda p: calls.append("factory")
+    )
+    maker.submit_to_gitea = MagicMock(  # type: ignore[method-assign]
+        side_effect=lambda p: calls.append("sle")
+    )
+
+    maker.release(version="26", push=True)
+
+    assert calls == ["publish", "wait", "factory", "sle"]
+    assert (
+        mock_upstream.return_value.publish_release.call_args.kwargs["version"] == "26"
+    )
+
+
+def test_release_needs_obs_submissions(mock_config):
+    mock_config.obs_submissions = None
+    with pytest.raises(RuntimeError, match="maker-config-production.yml"):
+        ReleaseMaker(mock_config).release(push=True)
 
 
 def test_submit_to_obs_not_configured(mock_config):

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     )
 else:
     from .models import MakerConfig
+from .builds import BuildWaiter
 from .upstream import ObsUpdater, UpstreamRelease
 
 RELEASE_PROJECT = "systemsmanagement:Agama:Release"
@@ -225,18 +226,86 @@ class ReleaseMaker:
         projects.append((IBS_API, self.config.gitea_submissions.source_project))
         return projects
 
-    def check_builds(self) -> bool:
-        """Reports failed builds in the configured projects; True if none failed."""
+    def build_waiter(self, ignore: list[str] | None = None) -> BuildWaiter:
+        """Returns a BuildWaiter ignoring the configured and the given builds."""
+        return BuildWaiter(
+            self._run_command, ignore=self.config.ignore_builds + (ignore or [])
+        )
+
+    def check_builds(self, wait: bool = False, ignore: list[str] | None = None) -> bool:
+        """Checks the builds of the configured packages; True if none failed.
+
+        Only the builds of the current sources count. With `wait`, waits until
+        they finish (and raises if some failed).
+        """
+        waiter = self.build_waiter(ignore)
+        packages = list(self.config.package_submissions)
+        projects = self.build_check_projects()
+        if wait:
+            waiter.wait(projects, packages)
+            return True
+
         ok = True
-        for api, project in self.build_check_projects():
-            cmd = ["osc"] + (["-A", api] if api else [])
-            res = self._run_command(cmd + ["results", "--failed", project])
-            if res.stdout.strip():
+        for api, project in projects:
+            pending, failed = waiter.status(api, project, packages)
+            for build in failed:
+                logging.error(f"{project}: failed {build}")
+            for build in pending:
+                logging.info(f"{project}: pending {build}")
+            if failed:
                 ok = False
-                logging.error(f"Failed builds in {project}:\n{res.stdout.strip()}")
-            else:
-                logging.info(f"No failed builds in {project}")
+            elif not pending:
+                logging.info(f"{project}: all builds succeeded")
         return ok
+
+    def release(
+        self,
+        version: str | None = None,
+        push: bool = False,
+        force: bool = False,
+        ref: str | None = None,
+        ignore: list[str] | None = None,
+        factory: bool = True,
+        sle: bool = True,
+    ) -> None:
+        """Releases a version in one go.
+
+        Tags the merged release PR, commits it to the Release project, waits for
+        the builds in OBS and IBS and submits to Factory and SLE.
+        """
+        if factory and not self.config.obs_submissions:
+            raise RuntimeError(
+                "No obs_submissions in the configuration, "
+                "use maker-config-production.yml or --no-factory"
+            )
+        if sle:
+            # fail now rather than after tagging
+            self.check_gitea_prerequisites(list(self.config.package_submissions))
+
+        UpstreamRelease(self._run_command).publish_release(
+            ObsUpdater(self._run_command),
+            RELEASE_PROJECT,
+            version=version,
+            push=push,
+            force=force,
+            ref=ref,
+        )
+        if not push:
+            logging.info(
+                "Dry run, would then wait for the builds and submit to "
+                + " and ".join(
+                    n for n, on in (("Factory", factory), ("SLE", sle)) if on
+                )
+            )
+            return
+
+        self.build_waiter(ignore).wait(
+            self.build_check_projects(), list(self.config.package_submissions)
+        )
+        if factory:
+            self.submit_to_obs([])
+        if sle:
+            self.submit_to_gitea([])
 
     def _get_gitea_info(self, url: str) -> tuple[str, str, str]:
         """Parses a Gitea URL (SSH or HTTPS) and returns (host, owner, repo)."""
@@ -549,19 +618,46 @@ class ReleaseMaker:
         Checks out source from OBS (defaulting to IBS), clones the target Gitea repo,
         syncs files, and creates or updates a pull request.
         """
-        check_tools(["osc", "git", "tea", "filterdiff"])
+        if not packages:
+            packages = list(self.config.package_submissions.keys())
+        # Check first, not to fail after submitting some packages
+        fork_org = self.check_gitea_prerequisites(packages, gitea_host)
+
         source_project = self.config.gitea_submissions.source_project
         target_org = self.config.gitea_submissions.target_org
         default_target_branch = self.config.gitea_submissions.target_branch
+
+        current = ""
+        try:
+            for pkg in packages:
+                current = pkg
+                self._submit_package_to_gitea(
+                    pkg,
+                    fork_org,
+                    source_project,
+                    target_org,
+                    default_target_branch,
+                    obs_api,
+                    gitea_host,
+                )
+        except Exception as e:
+            self._record(current, "failed", str(e).splitlines()[0] if str(e) else "")
+            raise
+
+    def check_gitea_prerequisites(
+        self, packages: list[str], gitea_host: str = "src.suse.de"
+    ) -> str:
+        """Checks the tools and the forks needed by submit_to_gitea.
+
+        Returns the fork org of the regular packages.
+        """
+        check_tools(["osc", "git", "tea", "filterdiff"])
+        target_org = self.config.gitea_submissions.target_org
         configured_fork_org = self.config.gitea_submissions.fork_org
         fork_org = self._resolve_fork_org(
             configured_fork_org, f"gitea@{gitea_host}:{target_org}/repo.git"
         )
 
-        if not packages:
-            packages = list(self.config.package_submissions.keys())
-
-        # Check the forks first, not to fail after submitting some packages
         repos: list[tuple[str, str | None]] = []
         for pkg in packages:
             strategy = self.config.package_submissions[pkg].gitea_submit
@@ -583,23 +679,7 @@ class ReleaseMaker:
                 f"{fork_org} has no fork of: {', '.join(missing)}. Fork them "
                 "in the web UI or with: tea repos fork --login LOGIN --repo OWNER/REPO"
             )
-
-        current = ""
-        try:
-            for pkg in packages:
-                current = pkg
-                self._submit_package_to_gitea(
-                    pkg,
-                    fork_org,
-                    source_project,
-                    target_org,
-                    default_target_branch,
-                    obs_api,
-                    gitea_host,
-                )
-        except Exception as e:
-            self._record(current, "failed", str(e).splitlines()[0] if str(e) else "")
-            raise
+        return fork_org
 
     def _submit_package_to_gitea(
         self,
@@ -761,9 +841,43 @@ def main() -> None:
     )
     parser_update.add_argument("--push", action="store_true", help=push_help)
 
-    subparsers.add_parser(
+    ignore_help = (
+        'Ignore the builds matching "PACKAGE REPOSITORY/ARCH", with shell '
+        "wildcards (e.g. 'agama */ppc64le'); can be repeated"
+    )
+
+    parser_check = subparsers.add_parser(
         "check-builds",
-        help="Check for failed builds in the OBS and IBS source projects.",
+        help="Check the builds of the packages in the OBS and IBS source projects.",
+    )
+    parser_check.add_argument(
+        "--wait", action="store_true", help="Wait until the builds finish."
+    )
+    parser_check.add_argument("--ignore", action="append", help=ignore_help)
+
+    parser_release = subparsers.add_parser(
+        "release",
+        help="Tag the merged release PR, commit it to OBS, wait for the builds "
+        "and submit to Factory and SLE.",
+    )
+    parser_release.add_argument(
+        "version",
+        nargs="?",
+        help="The released version (default: the last merged release PR)",
+    )
+    parser_release.add_argument("--push", action="store_true", help=push_help)
+    parser_release.add_argument(
+        "--force", action="store_true", help="Tag even if the CI did not pass."
+    )
+    parser_release.add_argument(
+        "--ref", help="Git ref to build (default: the vVERSION tag)"
+    )
+    parser_release.add_argument("--ignore", action="append", help=ignore_help)
+    parser_release.add_argument(
+        "--no-factory", action="store_true", help="Do not submit to Factory."
+    )
+    parser_release.add_argument(
+        "--no-sle", action="store_true", help="Do not submit to SLE."
     )
 
     args = parser.parse_args()
@@ -828,8 +942,18 @@ def run_subcommand(
             keep_mapping=True,
         )
     elif args.command == "check-builds":
-        if not maker.check_builds():
+        if not maker.check_builds(wait=args.wait, ignore=args.ignore):
             sys.exit(1)
+    elif args.command == "release":
+        maker.release(
+            version=args.version,
+            push=args.push,
+            force=args.force,
+            ref=args.ref,
+            ignore=args.ignore,
+            factory=not args.no_factory,
+            sle=not args.no_sle,
+        )
 
 
 if __name__ == "__main__":
