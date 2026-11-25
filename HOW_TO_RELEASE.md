@@ -384,6 +384,19 @@ script uses the user of your `tea` login for src.suse.de, unless `fork_org` is
 set in the configuration or `--fork-org USERNAME` is given (before the
 subcommand). Before pushing anything, it checks that all the forks exist.
 
+If the script fails with `invalid username, password or token` (or complains
+about forks that you know exist), the OAuth token of your `tea` login has
+probably expired. Log in again:
+
+~~~
+tea logins delete IBS
+tea logins add --url https://src.suse.de --name IBS --user USERNAME --oauth
+~~~
+
+Use the login name shown by `tea logins list` instead of `IBS` if yours differs.
+Your browser opens to authorize `tea`. You can check that it works with
+`tea api --login IBS /user`.
+
 The forks do not need to be up-to-date: the script creates the branch of the
 pull request from the target branch of the original repository (e.g.,
 `pool/agama`, `slfo-1.2`) and force-pushes it to the fork. Other branches of the
