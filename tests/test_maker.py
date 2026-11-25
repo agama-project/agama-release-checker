@@ -619,6 +619,18 @@ def test_submit_to_gitea_missing_fork(mock_run, mock_config):
     assert not any(c.args[0][:2] == ["git", "clone"] for c in mock_run.call_args_list)
 
 
+@pytest.mark.real_fork_check
+@patch("agama_release_checker.maker.subprocess.run")
+def test_submit_to_gitea_auth_error(mock_run, mock_config):
+    """An API authentication error is reported as such, not as a missing fork."""
+    mock_config.gitea_submissions.fork_org = "me"
+    out = {"message": "invalid username, password or token"}
+    mock_run.return_value = MagicMock(returncode=0, stdout=json.dumps(out), stderr="")
+
+    with pytest.raises(RuntimeError, match="invalid username, password or token"):
+        ReleaseMaker(mock_config).submit_to_gitea([])
+
+
 @pytest.mark.real_tea_login
 @patch("agama_release_checker.maker.subprocess.run")
 def test_fork_org_from_tea_login(mock_run, mock_config):

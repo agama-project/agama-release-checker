@@ -533,6 +533,16 @@ class ReleaseMaker:
                 ["tea", "api", *self._tea_login(host), f"/repos/{fork_org}/{repo}"]
             )
             data = json.loads(res.stdout or "{}")
+            message = data.get("message", "")
+            if message and not any(
+                s in message.lower()
+                for s in ("not exist", "not found", "couldn't be found")
+            ):
+                # e.g. an expired token: not the same as a missing fork
+                raise RuntimeError(
+                    f"Cannot check {fork_org}/{repo} on {host}: {message}. "
+                    f"Try re-authenticating: tea logins delete/add"
+                )
             parent = (data.get("parent") or {}).get("full_name")
             if parent != f"{owner}/{repo}":
                 missing.append(f"https://{host}/{owner}/{repo}")
