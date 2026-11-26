@@ -1,6 +1,7 @@
 import pytest
 import json
 import subprocess
+from pathlib import Path
 from unittest.mock import patch, MagicMock, ANY
 from agama_release_checker.maker import ReleaseMaker
 from agama_release_checker.models import (
@@ -212,6 +213,37 @@ def test_submit_to_gitea(
         cwd=ANY,
         input=ANY,
     )
+
+
+@patch("agama_release_checker.maker.Path.iterdir")
+@patch("agama_release_checker.maker.shutil.copytree")
+@patch("agama_release_checker.maker.shutil.copy2")
+@patch("agama_release_checker.maker.subprocess.run")
+def test_submit_to_gitea_only_obsinfo_changed(
+    mock_run, mock_copy2, mock_copytree, mock_iterdir, mock_config
+):
+    """Verifies that a change of only the .obsinfo is not submitted."""
+
+    def run_side_effect(cmd, **kwargs):
+        if "status" in cmd:
+            return MagicMock(returncode=0, stdout="M  agama.obsinfo", stderr="")
+        if "--name-only" in cmd:
+            return MagicMock(returncode=0, stdout="agama.obsinfo\n", stderr="")
+        if "pr" in cmd and "list" in cmd:
+            return MagicMock(returncode=0, stdout="[]", stderr="")
+        return MagicMock(returncode=0, stdout="OK", stderr="")
+
+    mock_run.side_effect = run_side_effect
+    mock_iterdir.return_value = []
+
+    maker = ReleaseMaker(mock_config)
+    maker.submit_to_gitea(["pkg1"])
+
+    for call in mock_run.call_args_list:
+        args = call[0][0]
+        assert args[:2] not in (["git", "commit"], ["git", "push"])
+        assert not (args[0] == "tea" and args[2] == "create")
+    assert maker.results == [("pkg1", "no changes", "")]
 
 
 @patch("agama_release_checker.maker.Path.iterdir")
@@ -693,3 +725,33 @@ def test_main_error_is_short(tmp_path, capsys, caplog):
             maker_module.main()
     assert exit_info.value.code == 1
     assert "Stopped: No obs_submissions in the configuration" in caplog.text
+
+
+@patch("agama_release_checker.maker.subprocess.run")
+def test_submit_to_gitea_skips_link_patch(mock_run, mock_config, tmp_path):
+    """Verifies that the project.diff of an OBS _link is not synced to Gitea."""
+
+    def run_side_effect(cmd, **kwargs):
+        if cmd[:2] == ["git", "clone"]:
+            Path(cmd[-1]).mkdir(parents=True)
+        elif cmd[0] == "osc" and "co" in cmd:
+            pkg_dir = Path(kwargs["cwd"]) / cmd[-2] / cmd[-1]
+            pkg_dir.mkdir(parents=True)
+            for name in ("pkg1.spec", "project.diff"):
+                (pkg_dir / name).write_text(name)
+        elif "status" in cmd:
+            return MagicMock(returncode=0, stdout="A  pkg1.spec", stderr="")
+        elif "pr" in cmd and "list" in cmd:
+            return MagicMock(returncode=0, stdout="[]", stderr="")
+        elif cmd[:2] == ["git", "commit"]:
+            synced.extend(sorted(p.name for p in Path(kwargs["cwd"]).iterdir()))
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    synced: list[str] = []
+    mock_run.side_effect = run_side_effect
+
+    with patch("agama_release_checker.maker.tempfile.TemporaryDirectory") as mock_tmp:
+        mock_tmp.return_value.__enter__.return_value = str(tmp_path)
+        ReleaseMaker(mock_config).submit_to_gitea(["pkg1"])
+
+    assert synced == ["pkg1.spec"]

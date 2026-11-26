@@ -61,6 +61,24 @@ def check_tools(tools: list[str]) -> None:
         )
 
 
+def only_metadata_changed(paths: list[str]) -> bool:
+    """Whether the changed files are only OBS service metadata (*.obsinfo).
+
+    The obs_scm service rewrites the .obsinfo (version, mtime, commit) on every
+    upstream commit, even when the .obscpio archive stays identical, e.g. when
+    no file of the package's subdirectory was touched.
+
+    >>> only_metadata_changed(["agama.obsinfo"])
+    True
+    >>> only_metadata_changed(["agama.obsinfo", "agama.obscpio"])
+    False
+    >>> only_metadata_changed([])
+    False
+    """
+    paths = [p for p in paths if p.strip()]
+    return bool(paths) and all(p.endswith(".obsinfo") for p in paths)
+
+
 class ReleaseMaker:
     """Handles submitting packages to OBS and Gitea.
 
@@ -268,6 +286,13 @@ class ReleaseMaker:
         res = self._run_command(["git", "status", "--porcelain"], cwd=repo_dir)
         if not res.stdout.strip():
             logging.info("No changes to commit")
+            return None
+
+        res = self._run_command(
+            ["git", "diff", "--cached", "--name-only"], cwd=repo_dir
+        )
+        if only_metadata_changed(res.stdout.splitlines()):
+            logging.info("Only *.obsinfo changed (no source changes), not committing")
             return None
 
         # Extract the diff of any .changes files to use in the PR description.
@@ -681,7 +706,9 @@ class ReleaseMaker:
                         item.unlink()
 
                 for item in obs_pkg_dir.iterdir():
-                    if item.name == ".osc":
+                    # project.diff: the patch of a _link with local changes,
+                    # already applied in the expanded checkout
+                    if item.name in (".osc", "project.diff"):
                         continue
                     if item.is_dir():
                         shutil.copytree(item, target_repo_dir / item.name)
